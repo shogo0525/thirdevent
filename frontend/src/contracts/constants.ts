@@ -1,0 +1,4 @@
+
+export const CONTRACT_ADDRESSES = {
+  GroupFactory: "0x8A0d1efa1979a42228b261956C50fDA56b79F698"
+}
