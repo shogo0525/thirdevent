@@ -107,10 +107,27 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
     },
   )
 
-  const ticketOwners: TicketOwner[] = owners.map((owner) => ({
+  let ticketOwners: TicketOwner[] = owners.map((owner) => ({
     walletAddress: owner.ownerAddress,
     tokenIds: owner.tokenBalances.map((tb) => parseInt(tb.tokenId, 16)),
   }))
+
+  const { data: users } = await supabase
+    .from('users')
+    .select('*')
+    .in(
+      'wallet_address',
+      ticketOwners.map((to) => to.walletAddress),
+    )
+
+  ticketOwners = ticketOwners.map((to) => {
+    const user = users?.find((u) => u.wallet_address === to.walletAddress)
+    return {
+      ...to,
+      userId: user?.id ?? null,
+      nickname: user?.name || null,
+    }
+  })
 
   const claimTicketUrl = `${proto}://${host}/claim-ticket/${eventId}`
   const claimQRCode = await QRCode.toDataURL(claimTicketUrl)
@@ -308,11 +325,6 @@ const EventDetail = ({
 
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const tokenOfUser = ticketOwners.find(
-    (owner) => owner.walletAddress.toLowerCase() === address?.toLowerCase(),
-  )
-  console.log('tokenOfUser', tokenOfUser)
-
   return (
     <Grid templateColumns={{ base: '100%', md: '65% 35%' }} gap={4}>
       <GridItem>
@@ -369,9 +381,17 @@ const EventDetail = ({
               <Text>チケット保有者</Text>
               {ticketOwners.map((owner, i: number) => (
                 <React.Fragment key={i}>
-                  <Link as={NextLink} color='teal.500' href={`/users/${owner}`}>
-                    {owner.walletAddress}
-                  </Link>
+                  {owner.userId ? (
+                    <Link
+                      as={NextLink}
+                      color='teal.500'
+                      href={`/users/${owner.walletAddress}`}
+                    >
+                      {owner.nickname}
+                    </Link>
+                  ) : (
+                    <Text>{owner.walletAddress}</Text>
+                  )}
                   <Text>保有 Token Id: {owner.tokenIds.join(',')}</Text>
                 </React.Fragment>
               ))}

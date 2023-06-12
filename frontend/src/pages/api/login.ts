@@ -9,7 +9,9 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const address = req.headers['x-thirdevent-address'] as string
+    const address = (
+      req.headers['x-thirdevent-address'] as string
+    ).toLowerCase()
     const message = req.headers['x-thirdevent-message'] as string
     const signature = req.headers['x-thirdevent-signature'] as string
 
@@ -17,9 +19,11 @@ export const handler = async (
       return res.status(400).json({ message: 'Wrong signature.' })
     }
 
-    const recoveredAddress = ethers.utils.verifyMessage(message, signature)
+    const recoveredAddress = ethers.utils
+      .verifyMessage(message, signature)
+      .toLowerCase()
 
-    if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+    if (recoveredAddress !== address) {
       return res.status(400).json({ message: 'Wrong signature.' })
     }
 
@@ -35,6 +39,7 @@ export const handler = async (
           .from('users')
           .insert({
             wallet_address: address,
+            name: `NONAME${address.slice(0, 5)}`,
             auth: {
               lastAuth: new Date().toISOString(),
               lastAuthStatus: 'success',
@@ -42,14 +47,19 @@ export const handler = async (
           })
           .select()
           .single()
+
         user = newUser
       }
 
-      const JWT_EXPIRY_IN_SECONDS = 1 * 60 // 60 minutes
+      if (!user) {
+        return res.status(400).json({ message: 'Failed to login' })
+      }
+
+      const JWT_EXPIRY_IN_SECONDS = 5 * 60 // 60 minutes
 
       const accessToken = jwt.sign(
         {
-          sub: user?.id,
+          sub: user.id,
           wallet_address: address,
           aud: 'authenticated',
           role: 'authenticated',

@@ -56,4 +56,6 @@ export type MintRule = {
 export type TicketOwner = {
   walletAddress: string
   tokenIds: number[]
+  userId?: string
+  nickname?: string
 }
