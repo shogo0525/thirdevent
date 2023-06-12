@@ -230,12 +230,11 @@ const EventDetail = ({
       if (requireSignature) {
         if (!sdk?.wallet) return
         const response = await fetchWithSignature(
-          '/api/getSignatureToMint',
+          '/api/auth/getSignatureToMint',
           sdk.wallet,
           {
             method: 'POST',
             body: JSON.stringify({
-              walletAddress: address,
               contractAddress: event.contractAddress,
               eventId: event.id,
               ticketIndex: ticketTypeIndex,

@@ -51,20 +51,17 @@ const Header = () => {
       const walletAddress = await signer.getAddress()
 
       try {
-        const responseLogin = await fetchWithSignature(
-          '/api/auth/login',
-          sdk.wallet,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              walletAddress,
-            }),
+        const response = await fetchWithSignature('/api/login', sdk.wallet, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        )
-        const data = await responseLogin.json()
+        })
+        console.log(response)
+        if (!response.ok) {
+          disconnect()
+        }
+        const data = await response.json()
         console.log('data', data)
       } catch (e) {
         console.log('e', e)

@@ -108,12 +108,11 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
   const claimTicket = async (tokenId: number) => {
     if (!sdk?.wallet) return
     const response = await fetchWithSignature(
-      '/api/getSignatureToClaim',
+      '/api/auth/getSignatureToClaim',
       sdk.wallet,
       {
         method: 'POST',
         body: JSON.stringify({
-          walletAddress: address,
           contractAddress: event.contractAddress,
           eventId: event.id,
           tokenId,
@@ -140,7 +139,6 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
       const { ownedNfts } = await alchemyClient.nft.getNftsForOwner(address, {
         contractAddresses: [event.contractAddress],
       })
-      console.log('eff response', ownedNfts)
       setTokenIds(ownedNfts.map((nft) => Number(nft.tokenId)))
     }
     fetchData()

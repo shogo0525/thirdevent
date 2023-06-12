@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { ethers } from 'ethers'
 import supabase from '@/lib/supabase'
 import jwt from 'jsonwebtoken'
 import cookie from 'cookie'
@@ -8,20 +9,32 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { walletAddress } = req.body
+    const address = req.headers['x-thirdevent-address'] as string
+    const message = req.headers['x-thirdevent-message'] as string
+    const signature = req.headers['x-thirdevent-signature'] as string
+
+    if (!address || !message || !signature) {
+      return res.status(400).json({ message: 'Wrong signature.' })
+    }
+
+    const recoveredAddress = ethers.utils.verifyMessage(message, signature)
+
+    if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+      return res.status(400).json({ message: 'Wrong signature.' })
+    }
 
     try {
       let { data: user, error: e } = await supabase
         .from('users')
         .select('*')
-        .eq('wallet_address', walletAddress)
+        .eq('wallet_address', address)
         .maybeSingle()
 
       if (!user) {
         const { data: newUser } = await supabase
           .from('users')
           .insert({
-            wallet_address: walletAddress,
+            wallet_address: address,
             auth: {
               lastAuth: new Date().toISOString(),
               lastAuthStatus: 'success',
@@ -32,12 +45,12 @@ export const handler = async (
         user = newUser
       }
 
-      const JWT_EXPIRY_IN_SECONDS = 60 * 60 // 60 minutes
+      const JWT_EXPIRY_IN_SECONDS = 1 * 60 // 60 minutes
 
       const accessToken = jwt.sign(
         {
           sub: user?.id,
-          wallet_address: walletAddress,
+          wallet_address: address,
           aud: 'authenticated',
           role: 'authenticated',
         },
