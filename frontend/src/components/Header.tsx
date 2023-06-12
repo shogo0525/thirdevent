@@ -1,9 +1,14 @@
+import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { ConnectWallet, useAddress } from '@thirdweb-dev/react'
+import {
+  ConnectWallet,
+  useDisconnect,
+  useAddress,
+  useSDK,
+} from '@thirdweb-dev/react'
 import { AddIcon } from '@chakra-ui/icons'
 import {
   Flex,
-  Heading,
   Link,
   Text,
   Button,
@@ -16,11 +21,58 @@ import {
   PopoverArrow,
   useDisclosure,
 } from '@chakra-ui/react'
+import { fetchWithSignature } from '@/lib/fetchWithSignature'
+import { useAuth } from '@/contexts/AuthProvider'
 
 const Header = () => {
   const router = useRouter()
   const address = useAddress()
+  const sdk = useSDK()
+  const disconnect = useDisconnect()
   const { onClose } = useDisclosure()
+
+  const { revalidateToken } = useAuth()
+
+  // useEffect(() => {
+  //   const tokenIsValid = revalidateToken()
+  //   console.log('tokenIsValid1 ', tokenIsValid)
+  //   if (tokenIsValid === false) disconnect()
+  // }, [revalidateToken, disconnect])
+
+  useEffect(() => {
+    if (!sdk) return
+
+    sdk.wallet.events.once('signerChanged', async (signer) => {
+      if (!signer || !sdk) return
+
+      const tokenIsValid = revalidateToken()
+      if (tokenIsValid === true) return
+
+      const walletAddress = await signer.getAddress()
+
+      try {
+        const responseLogin = await fetchWithSignature(
+          '/api/auth/login',
+          sdk.wallet,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              walletAddress,
+            }),
+          },
+        )
+        const data = await responseLogin.json()
+        console.log('data', data)
+      } catch (e) {
+        console.log('e', e)
+        disconnect()
+      }
+    })
+  }, [sdk, revalidateToken, disconnect])
+
   return (
     <Flex
       justifyContent='space-between'
@@ -65,6 +117,7 @@ const Header = () => {
             </PopoverContent>
           </Popover>
         )}
+
         <ConnectWallet />
       </Flex>
     </Flex>

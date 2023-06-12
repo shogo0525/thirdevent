@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { ethers } from 'ethers'
 
 export const config = {
-  matcher: '/api/:function*',
+  matcher: ['/api/:function', '/api/auth/login'],
 }
 
 export function middleware(request: NextRequest) {
@@ -11,14 +11,16 @@ export function middleware(request: NextRequest) {
   const message = request.headers.get('X-THIRDEVENT-MESSAGE') ?? ''
   const signature = request.headers.get('X-THIRDEVENT-SIGNATURE') ?? ''
 
+  if (!address || !message || !signature) {
+    return new NextResponse(
+      JSON.stringify({ success: false, message: 'Wrong signature.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+
   const recoveredAddress = ethers.utils.verifyMessage(message, signature)
 
-  if (
-    !address ||
-    !message ||
-    !signature ||
-    recoveredAddress.toLowerCase() !== address.toLowerCase()
-  ) {
+  if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
     return new NextResponse(
       JSON.stringify({ success: false, message: 'Wrong signature.' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },

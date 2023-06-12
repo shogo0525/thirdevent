@@ -27,7 +27,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     .from('events')
     .select('*, group:groups(*)')
     .neq('thumbnail', null)
-  console.log(data)
+  // console.log(data)
 
   const events =
     data?.map(
