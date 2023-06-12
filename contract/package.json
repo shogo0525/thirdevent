@@ -1,6 +1,29 @@
 {
+  "name": "thirdevent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node scripts/listen.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "hardhat": "^2.15.0"
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@openzeppelin/hardhat-upgrades": "^1.26.0",
+    "@types/uuid": "^9.0.1",
+    "dotenv": "^16.0.3",
+    "hardhat": "^2.14.0",
+    "hardhat-contract-sizer": "^2.9.0",
+    "solhint": "^3.4.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.0",
+    "@openzeppelin/contracts-upgradeable": "^4.9.0",
+    "@supabase/supabase-js": "^2.24.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4",
+    "uuid": "^9.0.0"
   }
 }

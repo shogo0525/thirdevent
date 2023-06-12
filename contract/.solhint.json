@@ -1,0 +1,26 @@
+{
+  "extends": "solhint:recommended",
+  "plugins": [],
+  "rules": {
+    "avoid-suicide": "error",
+    "avoid-sha3": "warn",
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "compiler-version": [
+      "error",
+      "^0.8.18"
+    ],
+    "no-global-import": "off",
+    "reason-string": [
+      "off"
+    ],
+    "func-visibility": [
+      "warn",
+      {
+        "ignoreConstructors": true
+      }
+    ]
+  }
+}
