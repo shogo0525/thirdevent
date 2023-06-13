@@ -1,5 +1,5 @@
 import { GetServerSideProps } from 'next'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef, ChangeEvent } from 'react'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
@@ -22,6 +22,16 @@ import {
   CardBody,
   CardFooter,
   Avatar,
+  Input,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
 } from '@chakra-ui/react'
 import type { Group, User } from '@/types'
 
@@ -39,6 +49,7 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
     .select(`*, groups(*)`)
     .eq('id', userId)
     .maybeSingle()
+
   if (!userData) {
     return {
       notFound: true,
@@ -67,9 +78,124 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
 }
 
 const UserDetail = ({ user }: UserDetailProps) => {
-  const { user: authUser } = useAuth()
+  const toast = useToast()
+  const { user: authUser, fetchUser } = useAuth()
+  console.log('authUser', authUser)
+  const isAuthUser = user.id === authUser?.id
+  const { isOpen, onOpen, onClose } = useDisclosure()
+
+  const inputFileRef = useRef<HTMLInputElement>(null)
+  const [userImage, setUserImage] = useState<File | null>(null)
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    file && setUserImage(file)
+  }
+
+  const saveImage = async () => {
+    try {
+      if (!authUser || !userImage) return
+
+      const imageFilePath = `users/${authUser.id}/thumbnail.png`
+      const { error: imageUploadError } = await supabase.storage
+        .from('images')
+        .upload(imageFilePath, userImage, {
+          upsert: true,
+        })
+
+      if (imageUploadError) {
+        console.error('Error uploading image:', imageUploadError)
+        toast({
+          title: 'Error uploading image.',
+          description: imageUploadError.message,
+          status: 'error',
+          duration: 9000,
+          position: 'top',
+          isClosable: true,
+        })
+        return
+      }
+
+      const {
+        data: { publicUrl: imagePublicUrl },
+      } = await supabase.storage.from('images').getPublicUrl(imageFilePath)
+      console.log('imagePublicUrl', imagePublicUrl)
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          thumbnail: imagePublicUrl,
+        })
+        .eq('id', authUser.id)
+
+      if (error) {
+        console.error('Error inserting data:', error)
+        return
+      }
+      toast({
+        title: 'プロフィール画像を変更しました',
+        status: 'success',
+        duration: 9000,
+        position: 'top',
+        isClosable: true,
+      })
+    } catch (e) {
+      console.log('e', e)
+    }
+  }
+
   return (
     <Container maxW='lg'>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>プロフィール編集</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Input
+              type='file'
+              accept='image/*'
+              style={{ display: 'none' }}
+              ref={inputFileRef}
+              onChange={handleImageChange}
+            />
+            <HStack justifyContent={'space-around'}>
+              <Avatar
+                src={
+                  userImage
+                    ? URL.createObjectURL(userImage)
+                    : authUser?.thumbnail
+                }
+                size='xl'
+              />
+
+              <Button
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+                onClick={() => inputFileRef.current?.click()}
+              >
+                画像を変更
+              </Button>
+            </HStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme='white'
+              bg='black'
+              onClick={async () => {
+                await saveImage()
+                onClose()
+                fetchUser()
+              }}
+            >
+              完了
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Stack spacing={4}>
         <HStack
           justifyContent={'space-between'}
@@ -78,11 +204,19 @@ const UserDetail = ({ user }: UserDetailProps) => {
           rounded={'lg'}
         >
           <HStack>
-            <Avatar src={user.thumbnail} size='xl' />
-            <Text>{user.name}</Text>
+            <Avatar
+              src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
+              size='xl'
+            />
+            <Text>{isAuthUser ? authUser?.name : user.name}</Text>
           </HStack>
-          {user.id === authUser?.id ? (
-            <Button colorScheme='white' bg='black' rounded={'full'}>
+          {isAuthUser ? (
+            <Button
+              colorScheme='white'
+              bg='black'
+              rounded={'full'}
+              onClick={onOpen}
+            >
               プロフィール編集
             </Button>
           ) : (

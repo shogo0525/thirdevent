@@ -28,9 +28,9 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 
 export default function Home() {
-  const { user } = useAuth()
-  const router = useRouter()
   const toast = useToast()
+  const router = useRouter()
+  const { user } = useAuth()
 
   const address = useAddress()
   const { contract } = useContract(

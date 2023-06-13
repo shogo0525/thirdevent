@@ -15,6 +15,7 @@ interface AuthContextProps {
   user: User | null
   revalidateToken: () => boolean
   authSignOut: () => void
+  fetchUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
@@ -55,27 +56,29 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     return true
   }, [authSignOut])
 
+  const fetchUser = useCallback(async () => {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    console.log('fetUser', userData)
+
+    if (!userData) return
+    const user: User = {
+      id: userData.id,
+      walletAddress: userData.wallet_address,
+      name: userData.name,
+      thumbnail: userData.thumbnail,
+    }
+    setUser(user)
+  }, [userId])
+
   useEffect(() => {
     if (!userId || !address) return
 
-    const fetchUser = async () => {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (!userData) return
-      const user: User = {
-        id: userData.id,
-        walletAddress: userData.wallet_address,
-        name: userData.name,
-        thumbnail: userData.thumbnail,
-      }
-      setUser(user)
-    }
     fetchUser()
-  }, [userId, address])
+  }, [userId, address, fetchUser])
 
   useEffect(() => {
     console.log('useEffect,checkTokenExpiration')
@@ -95,6 +98,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         revalidateToken,
         authSignOut,
+        fetchUser,
       }}
     >
       {children}
