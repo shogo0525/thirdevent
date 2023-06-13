@@ -7,9 +7,12 @@ import React, {
 } from 'react'
 import Cookies from 'js-cookie'
 
+type RevalidateTokenResponse = {
+  isTokenValid: boolean
+}
 interface AuthContextProps {
   tokenIsValid: boolean | null
-  revalidateToken: () => boolean
+  revalidateToken: () => RevalidateTokenResponse
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
@@ -18,8 +21,15 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [tokenIsValid, setTokenIsValid] = useState<boolean | null>(null)
 
   const revalidateToken = () => {
-    const tokenExpiration =
-      Number(Cookies.get('thirdevent-token_expiration')) ?? 0
+    const tokenExpiration = Cookies.get('thirdevent-token_expiration')
+
+    if (!tokenExpiration) {
+      return {
+        // isTokenEmpty: true,
+        isTokenValid: false,
+      }
+    }
+
     // console.log('tokenExpiration', tokenExpiration)
     // console.log('Date.now()', Date.now())
     // console.log('tokenExpiration * 1000', tokenExpiration * 1000)
@@ -29,12 +39,16 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     // )
 
     let isValid = true
-    if (!tokenExpiration || tokenExpiration * 1000 < Date.now()) {
+    if (Number(tokenExpiration) * 1000 < Date.now()) {
       isValid = false
     }
 
     setTokenIsValid(isValid)
-    return isValid
+
+    return {
+      // isTokenEmpty: false,
+      isTokenValid: isValid,
+    }
   }
 
   useEffect(() => {

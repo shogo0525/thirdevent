@@ -4,6 +4,14 @@ import { ParticipantTypes } from '@/constants'
 
 export type ParticipantType = keyof typeof ParticipantTypes
 
+export type User = {
+  id: string
+  walletAddress: string
+  name: string
+  thumbnail?: string
+  groups?: Group[]
+}
+
 export type Group = {
   id: string
   contractAddress: string

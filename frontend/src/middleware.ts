@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-// import jwt from 'jsonwebtoken'
-// import type { JwtPayload } from 'jsonwebtoken'
 import { jwtVerify } from 'jose'
 
 export const config = {

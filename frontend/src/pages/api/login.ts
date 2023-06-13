@@ -55,7 +55,8 @@ export const handler = async (
         return res.status(400).json({ message: 'Failed to login' })
       }
 
-      const JWT_EXPIRY_IN_SECONDS = 5 * 60 // 60 minutes
+      // const JWT_EXPIRY_IN_SECONDS = 1 * 10 // 1 minutes
+      const JWT_EXPIRY_IN_SECONDS = 60 * 60 // 60 minutes
 
       const accessToken = jwt.sign(
         {
