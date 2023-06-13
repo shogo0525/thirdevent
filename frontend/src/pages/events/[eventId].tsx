@@ -312,7 +312,7 @@ const EventDetail = ({
       ethers.utils.parseEther(data.fee),
       data.maxParticipants,
       data.participantType,
-      'https://example.com/ticket-metadata',
+      data.img,
       data.requireSignature,
     ]
     try {

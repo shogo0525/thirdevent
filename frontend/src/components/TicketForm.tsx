@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, ChangeEvent } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -14,6 +14,8 @@ import {
   Switch,
   Select,
 } from '@chakra-ui/react'
+import { v4 as uuidv4 } from 'uuid'
+import supabase from '@/lib/supabase'
 
 const schema = z.object({
   name: z.string(),
@@ -21,6 +23,7 @@ const schema = z.object({
   maxParticipants: z.number().int().positive(),
   participantType: z.number().int(),
   requireSignature: z.boolean(),
+  img: z.any(),
 })
 
 export type FormData = z.infer<typeof schema>
@@ -30,6 +33,8 @@ type TicketFormProps = {
 }
 
 export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
+  const [groupImage, setGroupImage] = useState<File | null>(null)
+
   const {
     control,
     handleSubmit,
@@ -38,9 +43,79 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
     resolver: zodResolver(schema),
   })
 
-  const onSubmit = (data: FormData) => {
-    console.log(data)
-    onSubmitHandler(data)
+  const onSubmit = async (data: FormData) => {
+    try {
+      if (data.img) {
+        const imgUrl = await uploadImageAndGetJSON(groupImage, data.name)
+        data.img = imgUrl
+
+        await onSubmitHandler(data)
+      } else {
+        alert('Please input image file')
+      }
+    } catch (error) {
+      console.log('Error uploading file: ', error)
+    }
+  }
+
+  const handleChangeImage = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setGroupImage(event.target.files[0])
+    }
+  }
+
+  const uploadImageAndGetJSON = async (
+    file: File | null,
+    ticketName: string,
+  ) => {
+    try {
+      const id = uuidv4()
+
+      const imageFilePath = `images/tickets/${id}/ticket.png`
+      const { data, error: imageUploadError } = await supabase.storage
+        .from('metadata')
+        .upload(imageFilePath, file!)
+
+      if (imageUploadError) {
+        console.error('Error uploading image:', imageUploadError)
+        return
+      }
+
+      const {
+        data: { publicUrl: imagePublicUrl },
+      } = await supabase.storage.from('metadata').getPublicUrl(imageFilePath)
+      console.log('imagePublicUrl', imagePublicUrl)
+
+      const ticketData = {
+        name: `${ticketName} ticket NFT`,
+        description: `about ${ticketName} ticket`,
+        image: imagePublicUrl,
+      }
+
+      const jsonFilePath = `json/tickets/${id}/ticket.json`
+      const { error: jsonUploadError } = await supabase.storage
+        .from('metadata')
+        .upload(
+          jsonFilePath,
+          new Blob([JSON.stringify(ticketData)], { type: 'application/json' }),
+          { contentType: 'application/json' },
+        )
+
+      if (jsonUploadError) {
+        console.error('Error uploading JSON:', jsonUploadError)
+        return
+      }
+
+      const {
+        data: { publicUrl: jsonPublicUrl },
+      } = supabase.storage.from('metadata').getPublicUrl(jsonFilePath)
+
+      console.log('jsonPublicUrl', jsonPublicUrl)
+
+      return jsonPublicUrl
+    } catch (e) {
+      console.log('e', e)
+    }
   }
 
   return (
@@ -137,6 +212,25 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
           />
         </FormLabel>
         <FormErrorMessage>{errors.requireSignature?.message}</FormErrorMessage>
+      </FormControl>
+
+      <FormControl mt={4} isInvalid={!!errors.img}>
+        <FormLabel>Image File</FormLabel>
+        <Controller
+          name='img'
+          control={control}
+          defaultValue=''
+          render={({ field: { onChange, ...rest } }) => (
+            <Input
+              type='file'
+              {...rest}
+              onChange={(e) => {
+                handleChangeImage(e)
+                onChange(e)
+              }}
+            />
+          )}
+        />
       </FormControl>
 
       <Button colorScheme='blue' mt={4} type='submit'>
