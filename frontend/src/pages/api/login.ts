@@ -93,9 +93,7 @@ export const handler = async (
         }),
       ])
 
-      return res
-        .status(200)
-        .json({ message: 'User authenticated', accessToken, user })
+      return res.status(200).json({ message: 'User authenticated', user })
     } catch (e) {}
   } else {
     res.status(400)

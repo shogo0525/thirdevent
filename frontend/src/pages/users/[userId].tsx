@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthProvider'
 
 import {
   Container,
@@ -66,12 +67,29 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
 }
 
 const UserDetail = ({ user }: UserDetailProps) => {
+  const { user: authUser } = useAuth()
   return (
     <Container maxW='lg'>
       <Stack spacing={4}>
-        <HStack>
-          <Avatar src={user.thumbnail} size='xl' />
-          <Text>{user.name}</Text>
+        <HStack
+          justifyContent={'space-between'}
+          p={6}
+          bg='white'
+          rounded={'lg'}
+        >
+          <HStack>
+            <Avatar src={user.thumbnail} size='xl' />
+            <Text>{user.name}</Text>
+          </HStack>
+          {user.id === authUser?.id ? (
+            <Button colorScheme='white' bg='black' rounded={'full'}>
+              プロフィール編集
+            </Button>
+          ) : (
+            <Button colorScheme='white' bg='black' rounded={'full'}>
+              フォロー
+            </Button>
+          )}
         </HStack>
 
         <Heading as='h2' size='md'>

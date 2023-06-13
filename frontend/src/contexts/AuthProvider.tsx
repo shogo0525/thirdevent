@@ -4,55 +4,99 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useCallback,
 } from 'react'
 import Cookies from 'js-cookie'
+import supabase from '@/lib/supabase'
+import type { User } from '@/types'
+import { useAddress, useDisconnect } from '@thirdweb-dev/react'
 
-type RevalidateTokenResponse = {
-  tokenIsValid: boolean
-}
 interface AuthContextProps {
-  tokenIsValid: boolean | null
-  userId: string
-  revalidateToken: () => RevalidateTokenResponse
+  user: User | null
+  revalidateToken: () => boolean
+  authSignOut: () => void
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
+const COOKIE = {
+  TOKEN_EXPIRATION: 'thirdevent-token_expiration',
+  USER_ID: 'thirdevent-user_id',
+}
+
 const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [tokenIsValid, setTokenIsValid] = useState<boolean | null>(null)
+  const address = useAddress()
+  const disconnect = useDisconnect()
+
   const [userId, setUserId] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
 
-  const revalidateToken = () => {
-    const tokenExpiration = Cookies.get('thirdevent-token_expiration')
-    const userId = Cookies.get('thirdevent-user_id') ?? null
+  const authSignOut = useCallback(() => {
+    Cookies.remove(COOKIE.TOKEN_EXPIRATION)
+    Cookies.remove(COOKIE.USER_ID)
+    setUser(null)
+    setUserId(null)
+    disconnect()
+  }, [disconnect])
 
-    if (!tokenExpiration) {
-      return {
-        // isTokenEmpty: true,
-        tokenIsValid: false,
-      }
+  const revalidateToken = useCallback(() => {
+    const tokenExpiration = Cookies.get(COOKIE.TOKEN_EXPIRATION)
+    const userId = Cookies.get(COOKIE.USER_ID) ?? null
+    if (
+      !userId ||
+      !tokenExpiration ||
+      Number(tokenExpiration) * 1000 < Date.now()
+    ) {
+      authSignOut()
+      return false
     }
 
-    let isValid = true
-    if (Number(tokenExpiration) * 1000 < Date.now()) {
-      isValid = false
-    }
-
-    setTokenIsValid(isValid)
     setUserId(userId)
-
-    return {
-      // isTokenEmpty: false,
-      tokenIsValid: isValid,
-    }
-  }
+    return true
+  }, [authSignOut])
 
   useEffect(() => {
-    revalidateToken()
-  }, [])
+    if (!userId || !address) return
+
+    const fetchUser = async () => {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (!userData) return
+      const user: User = {
+        id: userData.id,
+        walletAddress: userData.wallet_address,
+        name: userData.name,
+        thumbnail: userData.thumbnail,
+      }
+      setUser(user)
+    }
+    fetchUser()
+  }, [userId, address])
+
+  useEffect(() => {
+    console.log('useEffect,checkTokenExpiration')
+    const checkTokenExpiration = () => {
+      const tokenIsValid = revalidateToken()
+      if (!tokenIsValid) disconnect()
+    }
+    checkTokenExpiration()
+    const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000) // every 30 minutes
+
+    return () => clearInterval(intervalId)
+  }, [revalidateToken, disconnect])
 
   return (
-    <AuthContext.Provider value={{ tokenIsValid, userId, revalidateToken }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        revalidateToken,
+        authSignOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

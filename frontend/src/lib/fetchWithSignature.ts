@@ -1,4 +1,4 @@
-import type { UserWallet } from '@thirdweb-dev/sdk'
+import type { MetaMaskWallet } from '@thirdweb-dev/wallets'
 
 const SIGN_MESSAGE = `Sign at timestamp ${Date.now()}`
 
@@ -10,10 +10,10 @@ type Options = {
 
 export const fetchWithSignature = async (
   url: string,
-  wallet: UserWallet,
+  wallet: MetaMaskWallet,
   options: Options = {},
 ) => {
-  const signature = await wallet.sign(SIGN_MESSAGE)
+  const signature = await wallet.signMessage(SIGN_MESSAGE)
   const address = await wallet.getAddress()
 
   const opts = {

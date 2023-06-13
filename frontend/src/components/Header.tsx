@@ -1,23 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
-import supabase from '@/lib/supabase'
-import {
-  ConnectWallet,
-  useDisconnect,
-  useAddress,
-  useSDK,
-} from '@thirdweb-dev/react'
-import { AddIcon, HamburgerIcon } from '@chakra-ui/icons'
+import { useDisconnect, useAddress, useMetamask } from '@thirdweb-dev/react'
+import { HamburgerIcon } from '@chakra-ui/icons'
 import {
   Flex,
   Link,
   Text,
   Button,
   IconButton,
-  Image,
   Stack,
-  Icon,
   Divider,
   Drawer,
   DrawerBody,
@@ -32,94 +24,43 @@ import {
 } from '@chakra-ui/react'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { useAuth } from '@/contexts/AuthProvider'
-import type { User } from '@/types'
 
 const Header = () => {
   const router = useRouter()
   const address = useAddress()
-  const sdk = useSDK()
+  const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
 
-  const { revalidateToken } = useAuth()
-
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const { revalidateToken, authSignOut, user } = useAuth()
 
-  const checkTokenExpiration = () => {
-    const { tokenIsValid } = revalidateToken()
-    if (!tokenIsValid) disconnect()
-  }
+  const handleSignIn = async () => {
+    const wallet = await connectWithMetamask()
 
-  useEffect(() => {
-    checkTokenExpiration()
-    const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000) // every 30 minutes
-
-    return () => clearInterval(intervalId)
-  }, [])
-
-  useEffect(() => {
-    if (!sdk) return
-
-    sdk.wallet.events.once('signerChanged', async (signer) => {
-      if (!signer || !sdk) return
-      const { tokenIsValid } = revalidateToken()
-      if (tokenIsValid) return
-
-      try {
-        const response = await fetchWithSignature('/api/login', sdk.wallet, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-        console.log(response)
-        if (!response.ok) {
-          disconnect()
-        }
-        const data = await response.json()
-        console.log('data', data)
-
-        if (data.user) {
-          const u: User = {
-            id: data.user.id,
-            walletAddress: data.user.wallet_address,
-            name: data.user.name,
-            thumbnail: data.user.thumbnail,
-          }
-          setUser(u)
-        }
-      } catch (e) {
-        console.log('e', e)
+    try {
+      const response = await fetchWithSignature('/api/login', wallet, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      console.log(response)
+      if (!response.ok) {
         disconnect()
       }
-    })
-  }, [sdk, revalidateToken, disconnect])
-
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    if (!address) return
-
-    const fetchUser = async () => {
-      const { data: user } = await supabase
-        .from('users')
-        .select('*')
-        .eq('wallet_address', address.toLowerCase())
-        .maybeSingle()
-
-      console.log('user', user)
-
-      if (user) {
-        const u: User = {
-          id: user.id,
-          walletAddress: user.wallet_address,
-          name: user.name,
-          thumbnail: user.thumbnail,
-        }
-        setUser(u)
-      }
+      const data = await response.json()
+      console.log('data', data, address)
+      revalidateToken()
+    } catch (e) {
+      console.log('e', e)
+      disconnect()
     }
-    fetchUser()
-  }, [address])
+  }
+
+  const handleSignOut = () => {
+    authSignOut()
+    onClose()
+  }
 
   return (
     <Flex
@@ -142,6 +83,8 @@ const Header = () => {
                   <Avatar src={user.thumbnail} size='lg' />
                   <Text>{user.name}</Text>
                 </HStack>
+                <Text fontSize='sm'>ウォレットアドレス</Text>
+                <Text fontSize='sm'>{address}</Text>
 
                 <Divider />
               </Stack>
@@ -173,16 +116,17 @@ const Header = () => {
             </Stack>
           </DrawerBody>
 
-          {/* <DrawerFooter>
-            <Button variant='outline' mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button colorScheme='blue'>Save</Button>
-          </DrawerFooter> */}
+          <DrawerFooter>
+            {user && (
+              <Button onClick={handleSignOut} colorScheme={'red'}>
+                ログアウト
+              </Button>
+            )}
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
 
-      <Link href='/' textDecoration='none !important'>
+      <Link as={NextLink} href='/' textDecoration='none !important'>
         <Text
           fontSize='4xl'
           fontWeight='bold'
@@ -193,16 +137,23 @@ const Header = () => {
         </Text>
       </Link>
       <Flex justifyContent='space-between' alignItems='center' gap={4}>
-        <IconButton
-          variant='ghost'
-          fontSize='4xl'
-          _hover={{ background: 'transparent' }}
-          onClick={onOpen}
-          aria-label='menu'
-          icon={<HamburgerIcon />}
-        />
+        {user && (
+          <HStack spacing={4}>
+            <IconButton
+              variant='ghost'
+              fontSize='4xl'
+              _hover={{ background: 'transparent' }}
+              onClick={onOpen}
+              aria-label='menu'
+              icon={<HamburgerIcon />}
+            />
+            <Link as={NextLink} href={`/users/${user?.id}`}>
+              <Avatar src={user?.thumbnail} size='md' />
+            </Link>
+          </HStack>
+        )}
 
-        <ConnectWallet />
+        {!user && <Button onClick={handleSignIn}>ログイン</Button>}
       </Flex>
     </Flex>
   )

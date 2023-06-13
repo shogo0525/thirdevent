@@ -28,7 +28,7 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 
 export default function Home() {
-  const { userId } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const toast = useToast()
 
@@ -54,7 +54,7 @@ export default function Home() {
 
   const createGroup = async () => {
     try {
-      if (!groupImage) return
+      if (!user || !groupImage) return
       const groupId = uuidv4()
 
       const imageFilePath = `images/groups/${groupId}/membership.png`
@@ -125,7 +125,7 @@ export default function Home() {
         id: groupId,
         name: groupName,
         contract_address: groupAddress,
-        created_user_id: userId,
+        created_user_id: user.id,
         thumbnail: imagePublicUrl,
       })
 
@@ -136,7 +136,7 @@ export default function Home() {
 
       const { error: error2 } = await supabase
         .from('members')
-        .insert({ group_id: groupId, user_id: userId })
+        .insert({ group_id: groupId, user_id: user.id })
 
       if (error2) {
         console.error('Error inserting data:', error2)
@@ -159,51 +159,46 @@ export default function Home() {
 
   return (
     <Stack>
-      {address && userId && (
-        <>
-          userId:{userId}
-          <Input
-            placeholder='グループ名'
-            value={groupName}
-            onChange={handleNameChange}
-          />
-          <Input
-            type='file'
-            accept='image/*'
-            style={{ display: 'none' }}
-            ref={inputFileRef}
-            onChange={handleImageChange}
-          />
-          <Button
-            borderRadius='none'
-            p={0}
+      <Input
+        placeholder='グループ名'
+        value={groupName}
+        onChange={handleNameChange}
+      />
+      <Input
+        type='file'
+        accept='image/*'
+        style={{ display: 'none' }}
+        ref={inputFileRef}
+        onChange={handleImageChange}
+      />
+      <Button
+        borderRadius='none'
+        p={0}
+        width='100%'
+        height={{ base: '200px', md: '300px' }}
+        bgColor={'gray.200'}
+        onClick={handleUploadClick}
+      >
+        {groupImage ? (
+          <Image
+            src={URL.createObjectURL(groupImage)}
+            alt='選択された画像'
             width='100%'
-            height={{ base: '200px', md: '300px' }}
-            bgColor={'gray.200'}
-            onClick={handleUploadClick}
-          >
-            {groupImage ? (
-              <Image
-                src={URL.createObjectURL(groupImage)}
-                alt='選択された画像'
-                width='100%'
-                height='100%'
-                objectFit='cover'
-              />
-            ) : (
-              '画像を選択'
-            )}
-          </Button>
-          <Button
-            onClick={createGroup}
-            isLoading={isLoading}
-            colorScheme='purple'
-            isDisabled={!groupName || !groupImage}
-          >
-            グループを作成
-          </Button>
-        </>
-      )}
+            height='100%'
+            objectFit='cover'
+          />
+        ) : (
+          '画像を選択'
+        )}
+      </Button>
+      <Button
+        onClick={createGroup}
+        isLoading={isLoading}
+        colorScheme='purple'
+        isDisabled={!groupName || !groupImage}
+      >
+        グループを作成
+      </Button>
     </Stack>
   )
 }

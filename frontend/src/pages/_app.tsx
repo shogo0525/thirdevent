@@ -6,8 +6,8 @@ import { AuthProvider } from '@/contexts/AuthProvider'
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
-      <ThirdwebProvider activeChain='mumbai'>
+    <ThirdwebProvider activeChain='mumbai'>
+      <AuthProvider>
         <ChakraProvider
           theme={extendTheme({
             styles: {
@@ -23,7 +23,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <Component {...pageProps} />
           </Layout>
         </ChakraProvider>
-      </ThirdwebProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </ThirdwebProvider>
   )
 }
