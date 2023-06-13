@@ -40,10 +40,6 @@ export const handler = async (
           .insert({
             wallet_address: address,
             name: `NONAME${address.slice(0, 5)}`,
-            auth: {
-              lastAuth: new Date().toISOString(),
-              lastAuthStatus: 'success',
-            },
           })
           .select()
           .single()
@@ -88,11 +84,18 @@ export const handler = async (
             sameSite: 'strict',
           },
         ),
+        cookie.serialize('thirdevent-user_id', user.id, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV !== 'development',
+          maxAge: JWT_EXPIRY_IN_SECONDS,
+          path: '/',
+          sameSite: 'strict',
+        }),
       ])
 
       return res
         .status(200)
-        .json({ message: 'User authenticated', accessToken })
+        .json({ message: 'User authenticated', accessToken, user })
     } catch (e) {}
   } else {
     res.status(400)

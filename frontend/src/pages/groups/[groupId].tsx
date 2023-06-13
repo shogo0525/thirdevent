@@ -33,12 +33,15 @@ import {
   Image,
   Card,
   CardBody,
+  Avatar,
+  HStack,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { truncateContractAddress } from '@/utils'
 import type { Group } from '@/types'
 
 interface GroupDetailProps {
+  userId: string
   group: Group
 }
 

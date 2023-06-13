@@ -3,18 +3,6 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
-import { ethers } from 'ethers'
-import {
-  useSDK,
-  Web3Button,
-  useAddress,
-  useContract,
-  useContractRead,
-  useContractWrite,
-  useContractEvents,
-} from '@thirdweb-dev/react'
-import EventAbi from '@/contracts/EventAbi.json'
-import GroupAbi from '@/contracts/GroupAbi.json'
 
 import {
   Container,
@@ -32,6 +20,7 @@ import {
   CardHeader,
   CardBody,
   CardFooter,
+  Avatar,
 } from '@chakra-ui/react'
 import type { Group, User } from '@/types'
 
@@ -80,40 +69,8 @@ const UserDetail = ({ user }: UserDetailProps) => {
   return (
     <Container maxW='lg'>
       <Stack spacing={4}>
-        {/* TODO: component化(Headerと) */}
         <HStack>
-          {user.thumbnail ? (
-            <Image
-              src={user.thumbnail}
-              alt={user.name}
-              borderRadius='full'
-              boxSize='80px'
-              objectFit='cover'
-            />
-          ) : (
-            <Icon
-              viewBox='0 0 24 24'
-              boxSize='80px'
-              borderWidth='1px'
-              borderColor='gray.300'
-              borderRadius='full'
-            >
-              <circle
-                cx='12'
-                cy='7'
-                r='4'
-                stroke='currentColor'
-                fill='none'
-                strokeWidth='2'
-              />
-              <path
-                stroke='currentColor'
-                fill='none'
-                strokeWidth='2'
-                d='M8 14a8 8 0 1 0 8 0z'
-              />
-            </Icon>
-          )}
+          <Avatar src={user.thumbnail} size='xl' />
           <Text>{user.name}</Text>
         </HStack>
 

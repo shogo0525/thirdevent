@@ -8,10 +8,11 @@ import React, {
 import Cookies from 'js-cookie'
 
 type RevalidateTokenResponse = {
-  isTokenValid: boolean
+  tokenIsValid: boolean
 }
 interface AuthContextProps {
   tokenIsValid: boolean | null
+  userId: string
   revalidateToken: () => RevalidateTokenResponse
 }
 
@@ -19,24 +20,18 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [tokenIsValid, setTokenIsValid] = useState<boolean | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const revalidateToken = () => {
     const tokenExpiration = Cookies.get('thirdevent-token_expiration')
+    const userId = Cookies.get('thirdevent-user_id') ?? null
 
     if (!tokenExpiration) {
       return {
         // isTokenEmpty: true,
-        isTokenValid: false,
+        tokenIsValid: false,
       }
     }
-
-    // console.log('tokenExpiration', tokenExpiration)
-    // console.log('Date.now()', Date.now())
-    // console.log('tokenExpiration * 1000', tokenExpiration * 1000)
-    // console.log(
-    //   'tokenExpiration * 1000 < Date.now()',
-    //   tokenExpiration * 1000 < Date.now(),
-    // )
 
     let isValid = true
     if (Number(tokenExpiration) * 1000 < Date.now()) {
@@ -44,10 +39,11 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setTokenIsValid(isValid)
+    setUserId(userId)
 
     return {
       // isTokenEmpty: false,
-      isTokenValid: isValid,
+      tokenIsValid: isValid,
     }
   }
 
@@ -56,7 +52,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ tokenIsValid, revalidateToken }}>
+    <AuthContext.Provider value={{ tokenIsValid, userId, revalidateToken }}>
       {children}
     </AuthContext.Provider>
   )

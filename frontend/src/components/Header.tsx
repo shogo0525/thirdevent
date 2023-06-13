@@ -28,6 +28,7 @@ import {
   DrawerCloseButton,
   useDisclosure,
   HStack,
+  Avatar,
 } from '@chakra-ui/react'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -44,8 +45,8 @@ const Header = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   const checkTokenExpiration = () => {
-    const { isTokenValid } = revalidateToken()
-    if (!isTokenValid) disconnect()
+    const { tokenIsValid } = revalidateToken()
+    if (!tokenIsValid) disconnect()
   }
 
   useEffect(() => {
@@ -60,8 +61,8 @@ const Header = () => {
 
     sdk.wallet.events.once('signerChanged', async (signer) => {
       if (!signer || !sdk) return
-      const { isTokenValid } = revalidateToken()
-      if (isTokenValid) return
+      const { tokenIsValid } = revalidateToken()
+      if (tokenIsValid) return
 
       try {
         const response = await fetchWithSignature('/api/login', sdk.wallet, {
@@ -76,6 +77,16 @@ const Header = () => {
         }
         const data = await response.json()
         console.log('data', data)
+
+        if (data.user) {
+          const u: User = {
+            id: data.user.id,
+            walletAddress: data.user.wallet_address,
+            name: data.user.name,
+            thumbnail: data.user.thumbnail,
+          }
+          setUser(u)
+        }
       } catch (e) {
         console.log('e', e)
         disconnect()
@@ -96,12 +107,10 @@ const Header = () => {
         .maybeSingle()
 
       console.log('user', user)
-      console.log('address', address)
 
       if (user) {
         const u: User = {
           id: user.id,
-
           walletAddress: user.wallet_address,
           name: user.name,
           thumbnail: user.thumbnail,
@@ -130,40 +139,10 @@ const Header = () => {
             <DrawerHeader>
               <Stack>
                 <HStack>
-                  {user.thumbnail ? (
-                    <Image
-                      src={user.thumbnail}
-                      alt={user.name}
-                      borderRadius='full'
-                      boxSize='80px'
-                      objectFit='cover'
-                    />
-                  ) : (
-                    <Icon
-                      viewBox='0 0 24 24'
-                      boxSize='80px'
-                      borderWidth='1px'
-                      borderColor='gray.300'
-                      borderRadius='full'
-                    >
-                      <circle
-                        cx='12'
-                        cy='7'
-                        r='4'
-                        stroke='currentColor'
-                        fill='none'
-                        strokeWidth='2'
-                      />
-                      <path
-                        stroke='currentColor'
-                        fill='none'
-                        strokeWidth='2'
-                        d='M8 14a8 8 0 1 0 8 0z'
-                      />
-                    </Icon>
-                  )}
+                  <Avatar src={user.thumbnail} size='lg' />
                   <Text>{user.name}</Text>
                 </HStack>
+
                 <Divider />
               </Stack>
             </DrawerHeader>

@@ -19,13 +19,8 @@ export type Group = {
   balance?: string
   subtitle?: string
   thumbnail?: string
-  members?: GroupMember[]
+  members?: User[]
   events?: Event[]
-}
-
-export type GroupMember = {
-  groupId: string
-  address: string
 }
 
 export type Event = {
