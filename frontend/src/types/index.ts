@@ -48,7 +48,6 @@ export type Ticket = {
   currentParticipants: number
   participantType: ParticipantType
   metadataURI: string
-  isActive: boolean
   requireSignature: boolean
   ruleType?: MintRuleType
 }

@@ -2,6 +2,8 @@ import { artifacts } from 'hardhat'
 import path from 'path'
 
 async function main() {
+  saveFrontendFiles('GroupFactory')
+  saveFrontendFiles('Group')
   saveFrontendFiles('Event')
 }
 

@@ -22,7 +22,6 @@ contract Event is ERC721, Ownable {
     uint256 currentParticipants;
     ParticipantType participantType;
     string metadataURI;
-    bool isActive;
     bool requireSignature;
   }
   TicketType[] private ticketTypes;
@@ -110,7 +109,6 @@ contract Event is ERC721, Ownable {
         currentParticipants: 0,
         participantType: _participantType,
         metadataURI: _metadataURI,
-        isActive: true,
         requireSignature: _requireSignature
       })
     );

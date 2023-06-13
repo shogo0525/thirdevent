@@ -248,11 +248,6 @@
           },
           {
             "internalType": "bool",
-            "name": "isActive",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
             "name": "requireSignature",
             "type": "bool"
           }
