@@ -15,10 +15,22 @@ import {
 } from '@thirdweb-dev/react'
 import { CONTRACT_ADDRESSES } from '@/contracts/constants'
 import GroupFactoryAbi from '@/contracts/GroupFactoryAbi.json'
-import { Stack, Button, Text, Input, Link, Image, Box } from '@chakra-ui/react'
+import {
+  Stack,
+  Button,
+  Text,
+  Input,
+  Link,
+  Image,
+  Box,
+  useToast,
+} from '@chakra-ui/react'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export default function Home() {
+  const { userId } = useAuth()
   const router = useRouter()
+  const toast = useToast()
 
   const address = useAddress()
   const { contract } = useContract(
@@ -42,15 +54,24 @@ export default function Home() {
 
   const createGroup = async () => {
     try {
+      if (!groupImage) return
       const groupId = uuidv4()
 
       const imageFilePath = `images/groups/${groupId}/membership.png`
-      const { data, error: imageUploadError } = await supabase.storage
+      const { error: imageUploadError } = await supabase.storage
         .from('metadata')
-        .upload(imageFilePath, groupImage!)
+        .upload(imageFilePath, groupImage)
 
       if (imageUploadError) {
         console.error('Error uploading image:', imageUploadError)
+        toast({
+          title: 'Error uploading image.',
+          description: imageUploadError.message,
+          status: 'error',
+          duration: 9000,
+          position: 'top',
+          isClosable: true,
+        })
         return
       }
 
@@ -104,17 +125,18 @@ export default function Home() {
         id: groupId,
         name: groupName,
         contract_address: groupAddress,
-        creator_address: address,
+        created_user_id: userId,
         thumbnail: imagePublicUrl,
       })
 
       if (error) {
         console.error('Error inserting data:', error)
+        return
       }
 
       const { error: error2 } = await supabase
-        .from('group_member')
-        .insert({ group_id: groupId, member_address: address })
+        .from('members')
+        .insert({ group_id: groupId, user_id: userId })
 
       if (error2) {
         console.error('Error inserting data:', error2)
@@ -137,14 +159,14 @@ export default function Home() {
 
   return (
     <Stack>
-      {address && (
+      {address && userId && (
         <>
+          userId:{userId}
           <Input
             placeholder='グループ名'
             value={groupName}
             onChange={handleNameChange}
           />
-          <Button onClick={handleUploadClick}>画像を選択</Button>
           <Input
             type='file'
             accept='image/*'
@@ -152,26 +174,31 @@ export default function Home() {
             ref={inputFileRef}
             onChange={handleImageChange}
           />
-          {groupImage ? (
-            <Image
-              src={URL.createObjectURL(groupImage)}
-              alt='選択された画像'
-              width='100%'
-              height={{ base: '200px', md: '300px' }}
-              objectFit='cover'
-            />
-          ) : (
-            <Box
-              width='100%'
-              height={{ base: '200px', md: '300px' }}
-              bgColor={'gray.200'}
-            ></Box>
-          )}
-
+          <Button
+            borderRadius='none'
+            p={0}
+            width='100%'
+            height={{ base: '200px', md: '300px' }}
+            bgColor={'gray.200'}
+            onClick={handleUploadClick}
+          >
+            {groupImage ? (
+              <Image
+                src={URL.createObjectURL(groupImage)}
+                alt='選択された画像'
+                width='100%'
+                height='100%'
+                objectFit='cover'
+              />
+            ) : (
+              '画像を選択'
+            )}
+          </Button>
           <Button
             onClick={createGroup}
             isLoading={isLoading}
             colorScheme='purple'
+            isDisabled={!groupName || !groupImage}
           >
             グループを作成
           </Button>

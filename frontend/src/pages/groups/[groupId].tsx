@@ -49,19 +49,21 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
   context,
 ) => {
   const { groupId } = context.query
+  const userId = context.req.cookies['thirdevent-user_id'] ?? ''
+  console.log('userId', userId)
 
   const { data: groupData } = await supabase
     .from('groups')
     .select(
       `
         *,
-        group_member(member_address),
+        users(*),
         events(*)
       `,
     )
     .eq('id', groupId)
     .maybeSingle()
-  console.log(groupData)
+  // console.log(groupData)
 
   if (!groupData) {
     return {
@@ -79,9 +81,11 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
     name: groupData.name,
     subtitle: groupData.subtitle,
     thumbnail: groupData.thumbnail,
-    members: groupData.group_member.map((gm: any) => ({
-      groupId,
-      address: gm.member_address,
+    members: groupData.users?.map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      walletAddress: u.wallet_address,
+      thumbnail: u.thumbnail,
     })),
     events: groupData.events.map((e: any) => ({
       id: e.id,
@@ -93,6 +97,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
 
   return {
     props: {
+      userId,
       group,
     },
   }
@@ -107,6 +112,7 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
   )
 
   // address が Group の NFT をいくつ所有しているかを取得
+  // TODO: can be refactored
   const { data: groupNftCount } = useContractRead(groupContract, 'balanceOf', [
     address,
   ])
@@ -267,40 +273,50 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
             </CardBody>
           </Card>
 
-          <Heading>グループメンバー</Heading>
-          {group.members?.map((m) => (
+          <Heading fontSize={'md'}>グループメンバー</Heading>
+          {group.members?.map((user) => (
             <Link
               as={NextLink}
-              key={m.address}
+              key={user.id}
               color='teal.500'
-              href={`/users/${m.address}`}
+              href={`/users/${user.id}`}
             >
-              {m.address}
+              <HStack>
+                <Avatar src={user.thumbnail} size='sm' />
+                <Text>{user.name}</Text>
+              </HStack>
             </Link>
           ))}
 
           {isGroupMember && (
             <>
               <Divider />
-              <Heading as='h2'>グループメンバー向け機能</Heading>
-              <Text>イベントを作成</Text>
+              <Heading fontSize={'md'}>グループメンバー向け機能</Heading>
+
               <Input
                 placeholder='Enter Group Name'
                 value={eventTitle}
                 onChange={handleEventTitleChange}
               />
-              <Button isLoading={isCreatingEvent} onClick={createEvent}>
-                Create Event
+              <Button
+                isLoading={isCreatingEvent}
+                onClick={createEvent}
+                isDisabled={!eventTitle}
+              >
+                イベントを作成
               </Button>
 
-              <Text>メンバーーを追加</Text>
               <Input
                 placeholder='Enter Member Address'
                 value={newMemberAddress}
                 onChange={handleMemberAddressChange}
               />
-              <Button isLoading={isAddingMember} onClick={addMember}>
-                Add Member
+              <Button
+                isLoading={isAddingMember}
+                onClick={addMember}
+                isDisabled={!newMemberAddress}
+              >
+                メンバーーを追加
               </Button>
             </>
           )}
