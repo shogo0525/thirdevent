@@ -4,6 +4,14 @@ import { ParticipantTypes } from '@/constants'
 
 export type ParticipantType = keyof typeof ParticipantTypes
 
+export type User = {
+  id: string
+  walletAddress: string
+  name: string
+  thumbnail?: string
+  groups?: Group[]
+}
+
 export type Group = {
   id: string
   contractAddress: string
@@ -56,4 +64,6 @@ export type MintRule = {
 export type TicketOwner = {
   walletAddress: string
   tokenIds: number[]
+  userId?: string
+  nickname?: string
 }

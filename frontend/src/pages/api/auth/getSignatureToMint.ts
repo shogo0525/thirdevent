@@ -7,7 +7,8 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { walletAddress, contractAddress, eventId, ticketIndex } = req.body
+    const { contractAddress, eventId, ticketIndex } = req.body
+    const userWalletAddress = req.headers['x-thirdevent-address'] as string
 
     const { data, error } = await supabase
       .from('mint_rules')
@@ -27,7 +28,7 @@ export const handler = async (
     let canMint = false
     const { rule_type, rule_value } = data
     if (rule_type === 'allowlist') {
-      if (rule_value.includes(walletAddress)) {
+      if (rule_value.includes(userWalletAddress)) {
         console.log('you can mint!')
         canMint = true
       }
@@ -40,7 +41,7 @@ export const handler = async (
       const message = ethers.utils.arrayify(
         ethers.utils.solidityKeccak256(
           ['address', 'address', 'uint256'],
-          [contractAddress, walletAddress, ticketIndex],
+          [contractAddress, userWalletAddress, ticketIndex],
         ),
       )
       const signature = await signer.signMessage(message)

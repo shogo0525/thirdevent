@@ -8,7 +8,8 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { walletAddress, contractAddress, eventId, tokenId } = req.body
+    const { contractAddress, eventId, tokenId } = req.body
+    const userWalletAddress = req.headers['x-thirdevent-address'] as string
 
     const { owners } = await alchemyClient.nft.getOwnersForNft(
       contractAddress,
@@ -19,7 +20,7 @@ export const handler = async (
     if (
       !owners
         .map((add) => add.toLowerCase())
-        .includes(walletAddress.toLowerCase())
+        .includes(userWalletAddress.toLowerCase())
     ) {
       res.status(400).json({ message: 'You cannot mint.' })
       return
@@ -31,7 +32,7 @@ export const handler = async (
     const message = ethers.utils.arrayify(
       ethers.utils.solidityKeccak256(
         ['address', 'address', 'uint256'],
-        [contractAddress, walletAddress, tokenId],
+        [contractAddress, userWalletAddress, tokenId],
       ),
     )
     const signature = await signer.signMessage(message)

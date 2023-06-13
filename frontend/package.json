@@ -22,10 +22,14 @@
     "@types/react": "18.2.7",
     "@types/react-dom": "18.2.4",
     "alchemy-sdk": "^2.9.0",
+    "cookie": "^0.5.0",
     "eslint": "8.41.0",
     "eslint-config-next": "13.4.4",
     "ethers": "^5.7.2",
     "framer-motion": "^10.12.16",
+    "jose": "^4.14.4",
+    "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.0",
     "next": "13.4.4",
     "qrcode": "^1.5.3",
     "react": "18.2.0",
@@ -36,6 +40,9 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@types/cookie": "^0.5.1",
+    "@types/js-cookie": "^3.0.3",
+    "@types/jsonwebtoken": "^9.0.2",
     "@types/uuid": "^9.0.1"
   }
 }
