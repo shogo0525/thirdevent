@@ -8,9 +8,10 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { contractAddress, eventId, tokenId } = req.body
+    const { contractAddress, eventId, tokenId, claimId } = req.body
     const userWalletAddress = req.headers['x-thirdevent-address'] as string
-
+    console.log('req.body')
+    console.log(req.body)
     const { owners } = await alchemyClient.nft.getOwnersForNft(
       contractAddress,
       tokenId,
@@ -23,6 +24,25 @@ export const handler = async (
         .includes(userWalletAddress.toLowerCase())
     ) {
       res.status(400).json({ message: 'You cannot mint.' })
+      return
+    }
+
+    const { data: claimData } = await supabase
+      .from('claims')
+      .select('*')
+      .eq('id', claimId)
+      .maybeSingle()
+
+    if (!claimData) {
+      res.status(400).json({ message: 'No such claim found.' })
+      console.log(1)
+      return
+    }
+
+    const now = new Date()
+    const claimEnd = new Date(claimData.claim_end_date)
+    if (now > claimEnd) {
+      res.status(400).json({ message: 'Claim period has ended.' })
       return
     }
 

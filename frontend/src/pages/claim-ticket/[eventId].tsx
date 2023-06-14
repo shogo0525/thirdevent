@@ -40,6 +40,7 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  Tooltip,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
 import type { Event, Ticket, MintRule, TicketOwner } from '@/types'
@@ -52,13 +53,14 @@ import QRCode from 'qrcode'
 
 interface ClaimTicketProps {
   event: Event
+  claimEndDate: string
+  claimId: string
 }
 
 export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
   context,
 ) => {
-  const { eventId } = context.query
-
+  const { eventId, claim_id } = context.query
   const { data: eventData } = await supabase
     .from('events')
     .select('*, group:groups(*)')
@@ -84,17 +86,59 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
     },
   }
 
+  const { data: claimData } = await supabase
+    .from('claims')
+    .select('*')
+    .eq('id', claim_id)
+    .maybeSingle()
+
+  if (!claimData) {
+    return {
+      notFound: true,
+    }
+  }
+
+  const claimEndDate: string = claimData.claim_end_date
+
   return {
     props: {
       event,
+      claimEndDate,
+      claimId: claim_id,
     },
   }
 }
 
-const ClaimTicket = ({ event }: ClaimTicketProps) => {
+const useIsClaimExpired = (claimEndDate: string) => {
+  const [isExpired, setIsExpired] = useState<boolean>(false)
+  const [serverTime, setServerTime] = useState(null)
+
+  useEffect(() => {
+    const fetchTime = async () => {
+      const res = await fetch('/api/current-time')
+      const { currentTime } = await res.json()
+      setServerTime(currentTime)
+    }
+    fetchTime()
+  }, [])
+
+  useEffect(() => {
+    if (serverTime) {
+      const now = new Date(serverTime)
+      const claimEnd = new Date(claimEndDate)
+      setIsExpired(now > claimEnd)
+    }
+  }, [claimEndDate, serverTime])
+
+  console.log('isExpired', isExpired)
+  return isExpired
+}
+
+const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
   const connectedWallet = useConnectedWallet()
   const sdk = useSDK()
   const address = useAddress()
+  const isClaimExpired = useIsClaimExpired(claimEndDate)
 
   const [tokenIds, setTokenIds] = useState<number[]>([])
 
@@ -118,9 +162,16 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
           contractAddress: event.contractAddress,
           eventId: event.id,
           tokenId,
+          claimId,
         }),
       },
     )
+
+    if (response.status === 400) {
+      const data = await response.json()
+      alert(data.message)
+      return
+    }
 
     const { signature } = await response.json()
     console.log('signature', signature)
@@ -153,9 +204,24 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
       </Link>
 
       {tokenIds.map((tokenId) => (
-        <Button key={tokenId} onClick={() => claimTicket(tokenId)}>
-          Claim Ticket {tokenId}
-        </Button>
+        <Box key={tokenId}>
+          <Tooltip
+            label={isClaimExpired ? 'Claim period has ended.' : ''}
+            aria-label='A tooltip explaining why the button is disabled'
+          >
+            <span>
+              <Button
+                onClick={() => claimTicket(tokenId)}
+                isDisabled={isClaimExpired}
+              >
+                Claim Ticket {tokenId}
+              </Button>
+            </span>
+          </Tooltip>
+          <Text fontSize='sm' mt={2}>
+            {`Claim End Date: ${new Date(claimEndDate).toLocaleDateString()}`}
+          </Text>
+        </Box>
       ))}
     </Stack>
   )
