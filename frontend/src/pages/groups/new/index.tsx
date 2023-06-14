@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next'
+import { MyHead } from '@/components/MyHead'
 import Head from 'next/head'
 import NextLink from 'next/link'
 import { useState, useRef, ChangeEvent } from 'react'
@@ -181,48 +182,51 @@ const NewGroup = () => {
   }
 
   return (
-    <Stack>
-      <Input
-        placeholder='グループ名'
-        value={groupName}
-        onChange={handleNameChange}
-      />
-      <Input
-        type='file'
-        accept='image/*'
-        style={{ display: 'none' }}
-        ref={inputFileRef}
-        onChange={handleImageChange}
-      />
-      <Button
-        borderRadius='none'
-        p={0}
-        width='100%'
-        height={{ base: '200px', md: '300px' }}
-        bgColor={'gray.200'}
-        onClick={handleUploadClick}
-      >
-        {groupImage ? (
-          <Image
-            src={URL.createObjectURL(groupImage)}
-            alt='選択された画像'
-            width='100%'
-            height='100%'
-            objectFit='cover'
-          />
-        ) : (
-          '画像を選択'
-        )}
-      </Button>
-      <Button
-        onClick={createGroup}
-        isLoading={isLoading}
-        colorScheme='purple'
-        isDisabled={!groupName || !groupImage}
-      >
-        グループを作成
-      </Button>
-    </Stack>
+    <>
+      <MyHead title='グループ作成' />
+      <Stack>
+        <Input
+          placeholder='グループ名'
+          value={groupName}
+          onChange={handleNameChange}
+        />
+        <Input
+          type='file'
+          accept='image/*'
+          style={{ display: 'none' }}
+          ref={inputFileRef}
+          onChange={handleImageChange}
+        />
+        <Button
+          borderRadius='none'
+          p={0}
+          width='100%'
+          height={{ base: '200px', md: '300px' }}
+          bgColor={'gray.200'}
+          onClick={handleUploadClick}
+        >
+          {groupImage ? (
+            <Image
+              src={URL.createObjectURL(groupImage)}
+              alt='選択された画像'
+              width='100%'
+              height='100%'
+              objectFit='cover'
+            />
+          ) : (
+            '画像を選択'
+          )}
+        </Button>
+        <Button
+          onClick={createGroup}
+          isLoading={isLoading}
+          colorScheme='purple'
+          isDisabled={!groupName || !groupImage}
+        >
+          グループを作成
+        </Button>
+      </Stack>
+    </>
   )
 }
 
