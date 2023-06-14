@@ -30,7 +30,7 @@ const Header = () => {
   const router = useRouter()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { authSignOut, user } = useAuth()
+  const { authSignIn, authSignOut, user } = useAuth()
 
   const handleSignOut = () => {
     authSignOut()
@@ -147,12 +147,15 @@ const Header = () => {
             colorScheme='white'
             bg='black'
             rounded={'full'}
-            onClick={() => router.push('/login')}
+            onClick={authSignIn}
           >
             ログイン
           </Button>
         )}
-        {!address && (
+
+        {/* TODO: delete after `auto connect bug of thirdweb` is fixed */}
+        {/* @see: https://github.com/thirdweb-dev/js/issues/1018 */}
+        {/* {!address && (
           <Button
             colorScheme='white'
             bg='black'
@@ -161,7 +164,7 @@ const Header = () => {
           >
             ウォレット接続
           </Button>
-        )}
+        )} */}
       </Flex>
     </Flex>
   )
