@@ -8,9 +8,10 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { contractAddress, eventId, tokenId } = req.body
+    const { contractAddress, eventId, tokenId, claimId } = req.body
     const userWalletAddress = req.headers['x-thirdevent-address'] as string
-
+    console.log('req.body')
+    console.log(req.body)
     const { owners } = await alchemyClient.nft.getOwnersForNft(
       contractAddress,
       tokenId,
@@ -29,11 +30,12 @@ export const handler = async (
     const { data: claimData } = await supabase
       .from('claims')
       .select('*')
-      .eq('event_id', eventId)
+      .eq('id', claimId)
       .maybeSingle()
 
     if (!claimData) {
       res.status(400).json({ message: 'No such claim found.' })
+      console.log(1)
       return
     }
 

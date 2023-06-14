@@ -54,13 +54,13 @@ import QRCode from 'qrcode'
 interface ClaimTicketProps {
   event: Event
   claimEndDate: string
+  claimId: string
 }
 
 export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
   context,
 ) => {
   const { eventId, claim_id } = context.query
-
   const { data: eventData } = await supabase
     .from('events')
     .select('*, group:groups(*)')
@@ -104,6 +104,7 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
     props: {
       event,
       claimEndDate,
+      claimId: claim_id,
     },
   }
 }
@@ -133,7 +134,7 @@ const useIsClaimExpired = (claimEndDate: string) => {
   return isExpired
 }
 
-const ClaimTicket = ({ event, claimEndDate }: ClaimTicketProps) => {
+const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
   const connectedWallet = useConnectedWallet()
   const sdk = useSDK()
   const address = useAddress()
@@ -161,6 +162,7 @@ const ClaimTicket = ({ event, claimEndDate }: ClaimTicketProps) => {
           contractAddress: event.contractAddress,
           eventId: event.id,
           tokenId,
+          claimId,
         }),
       },
     )
