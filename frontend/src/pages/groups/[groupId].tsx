@@ -39,6 +39,7 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { truncateContractAddress } from '@/utils'
 import type { Group } from '@/types'
+import { COOKIE } from '@/constants'
 
 interface GroupDetailProps {
   userId: string
@@ -49,7 +50,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
   context,
 ) => {
   const { groupId } = context.query
-  const userId = context.req.cookies['thirdevent-user_id'] ?? ''
+  const userId = context.req.cookies[COOKIE.USER_ID] ?? ''
   console.log('userId', userId)
 
   const { data: groupData } = await supabase

@@ -11,6 +11,7 @@ import {
   useContract,
   useContractRead,
   useContractWrite,
+  useConnectedWallet,
 } from '@thirdweb-dev/react'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import EventAbi from '@/contracts/EventAbi.json'
@@ -91,6 +92,7 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
 }
 
 const ClaimTicket = ({ event }: ClaimTicketProps) => {
+  const connectedWallet = useConnectedWallet()
   const sdk = useSDK()
   const address = useAddress()
 
@@ -106,10 +108,10 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
   )
 
   const claimTicket = async (tokenId: number) => {
-    if (!sdk?.wallet) return
+    if (!connectedWallet) return
     const response = await fetchWithSignature(
       '/api/auth/getSignatureToClaim',
-      sdk.wallet,
+      connectedWallet,
       {
         method: 'POST',
         body: JSON.stringify({

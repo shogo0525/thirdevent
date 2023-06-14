@@ -6,11 +6,11 @@ import supabase from '@/lib/supabase'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { ethers } from 'ethers'
 import {
-  useSDK,
   useAddress,
   useContract,
   useContractRead,
   useContractWrite,
+  useConnectedWallet,
 } from '@thirdweb-dev/react'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import EventAbi from '@/contracts/EventAbi.json'
@@ -150,7 +150,7 @@ const EventDetail = ({
   claimTicketUrl,
   claimQRCode,
 }: EventDetailProps) => {
-  const sdk = useSDK()
+  const connectedWallet = useConnectedWallet()
   const address = useAddress()
 
   const { contract: groupContract } = useContract(
@@ -245,10 +245,10 @@ const EventDetail = ({
   ) => {
     try {
       if (requireSignature) {
-        if (!sdk?.wallet) return
+        if (!connectedWallet) return
         const response = await fetchWithSignature(
           '/api/auth/getSignatureToMint',
-          sdk.wallet,
+          connectedWallet,
           {
             method: 'POST',
             body: JSON.stringify({

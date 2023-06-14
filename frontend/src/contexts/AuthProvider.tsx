@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const address = useAddress()
+
   const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
 
@@ -99,16 +100,16 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [userId, address, fetchUser])
 
   useEffect(() => {
-    console.log('useEffect,checkTokenExpiration')
     const checkTokenExpiration = () => {
       const tokenIsValid = revalidateToken()
-      if (!tokenIsValid) disconnect()
+      console.log('useEffect, checkTokenExpiration', tokenIsValid)
+      if (!isTokenExpired) authSignOut()
     }
     checkTokenExpiration()
     const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000) // every 30 minutes
 
     return () => clearInterval(intervalId)
-  }, [revalidateToken, disconnect])
+  }, [revalidateToken, authSignOut])
 
   return (
     <AuthContext.Provider
