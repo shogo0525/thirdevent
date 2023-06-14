@@ -26,6 +26,24 @@ export const handler = async (
       return
     }
 
+    const { data: claimData } = await supabase
+      .from('claims')
+      .select('*')
+      .eq('event_id', eventId)
+      .maybeSingle()
+
+    if (!claimData) {
+      res.status(400).json({ message: 'No such claim found.' })
+      return
+    }
+
+    const now = new Date()
+    const claimEnd = new Date(claimData.claim_end_date)
+    if (now > claimEnd) {
+      res.status(400).json({ message: 'Claim period has ended.' })
+      return
+    }
+
     const signerPrivateKey = process.env.WALLET_PRIVATE_KEY ?? ''
     const signer = new ethers.Wallet(signerPrivateKey)
 

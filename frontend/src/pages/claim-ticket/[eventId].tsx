@@ -165,6 +165,12 @@ const ClaimTicket = ({ event, claimEndDate }: ClaimTicketProps) => {
       },
     )
 
+    if (response.status === 400) {
+      const data = await response.json()
+      alert(data.message)
+      return
+    }
+
     const { signature } = await response.json()
     console.log('signature', signature)
     if (!signature) {
