@@ -56,13 +56,11 @@ const EventForm = ({ onSubmitHandler }: EventFormProps) => {
         const proto = window.location.protocol
         const host = window.location.host
 
-        if (claims && claims[0]) {
-          const tickets = claims[0].claim_ids.map(
-            (claim_id: string, index: number) => ({
-              url: `${proto}//${host}/claim-ticket/${eventId}?claim_id=${claim_id}`,
-              endDate: claims[0].claim_end_date[index],
-            }),
-          )
+        if (claims && claims.length > 0) {
+          const tickets = claims.map((claim) => ({
+            url: `${proto}//${host}/claim-ticket/${eventId}?claim_id=${claim.id}`,
+            endDate: claim.claim_end_date,
+          }))
 
           setClaimTickets(tickets)
         } else {
@@ -93,36 +91,14 @@ const EventForm = ({ onSubmitHandler }: EventFormProps) => {
     try {
       const claimId = uuidv4()
 
-      const { data: existingClaims } = await supabase
-        .from('claims')
-        .select('*')
-        .eq('event_id', eventId)
+      const { error } = await supabase.from('claims').insert({
+        id: claimId,
+        event_id: eventId,
+        claim_end_date: data.claim_end_date,
+      })
 
-      let insertOrUpdateError = null
-
-      if (existingClaims && existingClaims.length > 0) {
-        const { error } = await supabase
-          .from('claims')
-          .update({
-            claim_ids: [...existingClaims[0].claim_ids, claimId],
-            claim_end_date: [
-              ...existingClaims[0].claim_end_date,
-              data.claim_end_date,
-            ],
-          })
-          .eq('event_id', eventId)
-        insertOrUpdateError = error
-      } else {
-        const { error } = await supabase.from('claims').insert({
-          event_id: eventId,
-          claim_ids: [claimId],
-          claim_end_date: [data.claim_end_date],
-        })
-        insertOrUpdateError = error
-      }
-
-      if (insertOrUpdateError) {
-        throw insertOrUpdateError
+      if (error) {
+        throw error
       }
 
       const proto = window.location.protocol
@@ -167,6 +143,7 @@ const EventForm = ({ onSubmitHandler }: EventFormProps) => {
               QRコードを拡大する
             </Button>
             <Text mt={2}>期限：{claimTickets[index].endDate}</Text>
+            <Text mt={2}>URL：{claimTickets[index].url}</Text>
           </Box>
         ))}
       </Flex>
