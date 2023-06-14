@@ -450,6 +450,11 @@ const EventDetail = ({
 
           {isGroupMember && (
             <>
+              <Button mt={4} colorScheme='blue'>
+                <Link as={NextLink} href={`/events/${event.id}/edit`}>
+                  Edit Event
+                </Link>
+              </Button>
               <Text>参加受付用QRコード</Text>
               <Link as={NextLink} color='teal.500' href={claimTicketUrl}>
                 {claimTicketUrl}
