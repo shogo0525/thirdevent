@@ -34,9 +34,13 @@ export type Event = {
     name: string
     contractAddress: string
   }
+  tickets: TicketMetadata[]
 }
 
+export type TicketRuleType = 'allowlist' | 'code' | 'nft'
+
 export type Ticket = {
+  ticketId: string
   name: string
   fee: BigNumber
   maxParticipants: number
@@ -44,21 +48,19 @@ export type Ticket = {
   participantType: ParticipantType
   metadataURI: string
   requireSignature: boolean
-  ruleType?: MintRuleType
+  ruleType?: TicketRuleType
+}
+export type TicketMetadata = {
+  ticketId: string
+  name: string
+  thumbnail: string
+  ruleType?: TicketRuleType
 }
 
 export type Claim = {
   id: string
   eventId: string
   claimEndDate: string
-}
-
-export type MintRuleType = 'allowlist' | 'code' | 'nft'
-
-export type MintRule = {
-  eventId: string
-  ticketIndex: number
-  ruleType: MintRuleType
 }
 
 export type TicketOwner = {

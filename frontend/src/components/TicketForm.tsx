@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from 'react'
+import React, { useState, useRef, ChangeEvent } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -13,43 +13,73 @@ import {
   NumberInputField,
   Switch,
   Select,
+  Image,
+  Stack,
 } from '@chakra-ui/react'
 import { v4 as uuidv4 } from 'uuid'
 import supabase from '@/lib/supabase'
+import { Event, TicketRuleType } from '@/types'
 
 const schema = z.object({
   name: z.string(),
   fee: z.string(),
   maxParticipants: z.number().int().positive(),
   participantType: z.number().int(),
-  requireSignature: z.boolean(),
   img: z.any(),
+  requireSignature: z.boolean(),
+  ruleType: z.enum(['allowlist', 'code', 'nft']).optional(),
+  ruleValue: z.string().optional(),
 })
 
 export type FormData = z.infer<typeof schema>
 
 type TicketFormProps = {
-  onSubmitHandler: (data: FormData) => Promise<void>
+  event: Event
+  onSubmitHandler: (newTicketId: string, data: FormData) => Promise<void>
 }
 
-export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
-  const [groupImage, setGroupImage] = useState<File | null>(null)
+export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
+  const [ticketImage, setTicketImage] = useState<File | null>(null)
+  const [isRequireSignature, setIsRequireSignature] = useState(false)
 
   const {
+    register,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
+  const requireSignature = watch('requireSignature')
+  const ruleType = watch('ruleType')
+  console.log(requireSignature, ruleType, errors)
+
   const onSubmit = async (data: FormData) => {
+    console.log(data)
+
     try {
       if (data.img) {
-        const imgUrl = await uploadImageAndGetJSON(groupImage, data.name)
-        data.img = imgUrl
+        const { data: uploadResult } = await uploadImageAndGetJSON(
+          ticketImage,
+          data.name,
+        )
+        if (uploadResult) {
+          const { ticketId, ticketImageUrl, metadataURI } = uploadResult
+          data.img = metadataURI
 
-        await onSubmitHandler(data)
+          const { error } = await supabase.from('tickets').insert({
+            id: ticketId,
+            event_id: event.id,
+            name: data.name,
+            thumbnail: ticketImageUrl,
+            rule_type: data.ruleType,
+            rule_value: data.ruleValue,
+          })
+
+          await onSubmitHandler(ticketId, data)
+        }
       } else {
         alert('Please input image file')
       }
@@ -58,27 +88,31 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
     }
   }
 
-  const handleChangeImage = (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setGroupImage(event.target.files[0])
-    }
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    file && setTicketImage(file)
   }
 
   const uploadImageAndGetJSON = async (
     file: File | null,
     ticketName: string,
   ) => {
-    try {
-      const id = uuidv4()
+    const ticketId = uuidv4()
 
-      const imageFilePath = `images/tickets/${id}/ticket.png`
+    try {
+      const imageFilePath = `images/events/${event.id}/tickets/${ticketId}/ticket.png`
+      const jsonFilePath = `json/events/${event.id}/tickets/${ticketId}/ticket.json`
+
       const { data, error: imageUploadError } = await supabase.storage
         .from('metadata')
         .upload(imageFilePath, file!)
 
       if (imageUploadError) {
         console.error('Error uploading image:', imageUploadError)
-        return
+        return {
+          data: null,
+          error: imageUploadError,
+        }
       }
 
       const {
@@ -92,7 +126,6 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         image: imagePublicUrl,
       }
 
-      const jsonFilePath = `json/tickets/${id}/ticket.json`
       const { error: jsonUploadError } = await supabase.storage
         .from('metadata')
         .upload(
@@ -103,7 +136,10 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
 
       if (jsonUploadError) {
         console.error('Error uploading JSON:', jsonUploadError)
-        return
+        return {
+          data: null,
+          error: jsonUploadError,
+        }
       }
 
       const {
@@ -112,14 +148,25 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
 
       console.log('jsonPublicUrl', jsonPublicUrl)
 
-      return jsonPublicUrl
+      return {
+        data: {
+          ticketId,
+          ticketImageUrl: imagePublicUrl,
+          metadataURI: jsonPublicUrl,
+        },
+        error: null,
+      }
     } catch (e) {
       console.log('e', e)
+      return {
+        data: null,
+        error: e,
+      }
     }
   }
 
   return (
-    <Box as='form' onSubmit={handleSubmit(onSubmit)} p={4}>
+    <Stack as='form' onSubmit={handleSubmit(onSubmit)} p={4} spacing={4}>
       <FormControl isInvalid={!!errors.name}>
         <FormLabel>Name</FormLabel>
         <Controller
@@ -131,7 +178,7 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
       </FormControl>
 
-      <FormControl mt={4} isInvalid={!!errors.fee}>
+      <FormControl isInvalid={!!errors.fee}>
         <FormLabel>Fee (MATIC)</FormLabel>
         <Controller
           name='fee'
@@ -152,7 +199,7 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         <FormErrorMessage>{errors.fee?.message}</FormErrorMessage>
       </FormControl>
 
-      <FormControl mt={4} isInvalid={!!errors.maxParticipants}>
+      <FormControl isInvalid={!!errors.maxParticipants}>
         <FormLabel>Max Participants</FormLabel>
         <Controller
           name='maxParticipants'
@@ -173,7 +220,7 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         <FormErrorMessage>{errors.maxParticipants?.message}</FormErrorMessage>
       </FormControl>
 
-      <FormControl mt={4} isInvalid={!!errors.participantType}>
+      <FormControl isInvalid={!!errors.participantType}>
         <FormLabel>Participant Type</FormLabel>
         <Controller
           name='participantType'
@@ -195,9 +242,9 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         <FormErrorMessage>{errors.participantType?.message}</FormErrorMessage>
       </FormControl>
 
-      <FormControl mt={4} isInvalid={!!errors.requireSignature}>
+      <FormControl isInvalid={!!errors.requireSignature}>
         <FormLabel>
-          Require Signature
+          購入に条件を追加する
           <Controller
             name='requireSignature'
             control={control}
@@ -206,7 +253,10 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
               <Switch
                 colorScheme='blue'
                 isChecked={field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
+                onChange={(e) => {
+                  field.onChange(e.target.checked)
+                  setIsRequireSignature(e.target.checked)
+                }}
               />
             )}
           />
@@ -214,7 +264,26 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
         <FormErrorMessage>{errors.requireSignature?.message}</FormErrorMessage>
       </FormControl>
 
-      <FormControl mt={4} isInvalid={!!errors.img}>
+      {requireSignature && (
+        <>
+          <Select {...register('ruleType')}>
+            <option value='allowlist'>Allowlist</option>
+            <option value='code'>Code</option>
+            <option value='nft'>NFT</option>
+          </Select>
+
+          <Input
+            {...register('ruleValue')}
+            placeholder={
+              ruleType === 'code'
+                ? 'Enter a value'
+                : 'Enter values separated by comma'
+            }
+          />
+        </>
+      )}
+
+      <FormControl isInvalid={!!errors.img}>
         <FormLabel>Image File</FormLabel>
         <Controller
           name='img'
@@ -225,17 +294,26 @@ export const TicketForm = ({ onSubmitHandler }: TicketFormProps) => {
               type='file'
               {...rest}
               onChange={(e) => {
-                handleChangeImage(e)
+                handleImageChange(e)
                 onChange(e)
               }}
             />
           )}
         />
+        {ticketImage && (
+          <Image
+            src={URL.createObjectURL(ticketImage)}
+            alt='選択された画像'
+            width='100%'
+            height='100%'
+            objectFit='cover'
+          />
+        )}
       </FormControl>
 
-      <Button colorScheme='blue' mt={4} type='submit'>
+      <Button colorScheme='blue' type='submit'>
         Submit
       </Button>
-    </Box>
+    </Stack>
   )
 }

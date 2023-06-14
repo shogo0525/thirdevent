@@ -9,7 +9,7 @@ import './Event.sol';
 import './Enums.sol';
 
 interface IEvent {
-  function addTicketType(string memory _name, uint256 _fee, uint256 _maxParticipants, ParticipantType _participantType, string memory _metadataURI, bool _requireSignature) external;
+  function addTicketType(string memory _ticketId, string memory _name, uint256 _fee, uint256 _maxParticipants, ParticipantType _participantType, string memory _metadataURI, bool _requireSignature) external;
   function withdrawFunds(address _to) external;
 }
 
@@ -81,6 +81,7 @@ contract Group is ERC721, Ownable {
 
   function addTicketType(
     address _eventAddress,
+    string memory _ticketId,
     string memory _name,
     uint256 _fee,
     uint256 _maxParticipants,
@@ -88,7 +89,7 @@ contract Group is ERC721, Ownable {
     string memory _metadataURI,
     bool _requireSignature
   ) public onlyAdminOrMember {
-    IEvent(_eventAddress).addTicketType(_name, _fee, _maxParticipants, _participantType, _metadataURI, _requireSignature);
+    IEvent(_eventAddress).addTicketType(_ticketId, _name, _fee, _maxParticipants, _participantType, _metadataURI, _requireSignature);
   }
 
   function withdrawFromEvent(address _eventAddress) public onlyAdminOrMember {

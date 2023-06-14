@@ -108,6 +108,11 @@
     "inputs": [
       {
         "internalType": "string",
+        "name": "_ticketId",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
         "name": "_name",
         "type": "string"
       },
@@ -218,6 +223,11 @@
         "components": [
           {
             "internalType": "string",
+            "name": "ticketId",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
             "name": "name",
             "type": "string"
           },
@@ -325,9 +335,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_ticketTypeIndex",
-        "type": "uint256"
+        "internalType": "string",
+        "name": "_ticketId",
+        "type": "string"
       },
       {
         "internalType": "bytes",

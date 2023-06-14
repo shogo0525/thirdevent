@@ -1,20 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ethers } from 'ethers'
 import supabase from '@/lib/supabase'
+import alchemyClient from '@/lib/alchemy'
 
 export const handler = async (
   req: NextApiRequest,
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { contractAddress, eventId, ticketIndex, code } = req.body
+    const { contractAddress, eventId, ticketId, code } = req.body
     const userWalletAddress = req.headers['x-thirdevent-address'] as string
 
     const { data, error } = await supabase
-      .from('mint_rules')
+      .from('tickets')
       .select('rule_type, rule_value')
+      .eq('id', ticketId)
       .eq('event_id', eventId)
-      .eq('ticket_index', ticketIndex)
       .maybeSingle()
 
     console.log('data', data)
@@ -27,15 +28,33 @@ export const handler = async (
 
     let canMint = false
     const { rule_type, rule_value } = data
-    if (rule_type === 'allowlist') {
-      if (rule_value.includes(userWalletAddress)) {
+
+    if (rule_type === 'code') {
+      if (rule_value === code) {
         console.log('you can mint!')
         canMint = true
       }
     }
 
-    if (rule_type === 'code') {
-      if (rule_value.includes(code)) {
+    if (rule_type === 'allowlist') {
+      const allowlist = rule_value.split(',')
+      if (allowlist.includes(userWalletAddress)) {
+        console.log('you can mint!')
+        canMint = true
+      }
+    }
+
+    if (rule_type === 'nft') {
+      const nftContractAddresses = rule_value.split(',')
+      const { ownedNfts } = await alchemyClient.nft.getNftsForOwner(
+        userWalletAddress,
+        {
+          contractAddresses: nftContractAddresses,
+          omitMetadata: true,
+        },
+      )
+
+      if (ownedNfts.length > 0) {
         console.log('you can mint!')
         canMint = true
       }
@@ -47,8 +66,8 @@ export const handler = async (
 
       const message = ethers.utils.arrayify(
         ethers.utils.solidityKeccak256(
-          ['address', 'address', 'uint256'],
-          [contractAddress, userWalletAddress, ticketIndex],
+          ['address', 'address', 'string'],
+          [contractAddress, userWalletAddress, ticketId],
         ),
       )
       const signature = await signer.signMessage(message)
