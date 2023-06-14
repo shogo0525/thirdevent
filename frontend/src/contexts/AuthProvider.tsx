@@ -103,10 +103,11 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkTokenExpiration = () => {
       const tokenIsValid = revalidateToken()
       console.log('useEffect, checkTokenExpiration', tokenIsValid)
-      if (!isTokenExpired) authSignOut()
+      if (!tokenIsValid) authSignOut()
     }
-    checkTokenExpiration()
     const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000) // every 30 minutes
+
+    checkTokenExpiration()
 
     return () => clearInterval(intervalId)
   }, [revalidateToken, authSignOut])
