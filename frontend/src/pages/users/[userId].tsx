@@ -145,7 +145,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
   }
 
   return (
-    <Container maxW='lg'>
+    <Container maxW='xl'>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>

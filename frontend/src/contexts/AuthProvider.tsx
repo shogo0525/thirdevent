@@ -9,28 +9,50 @@ import React, {
 import Cookies from 'js-cookie'
 import supabase from '@/lib/supabase'
 import type { User } from '@/types'
-import { useAddress, useDisconnect } from '@thirdweb-dev/react'
+import { useAddress, useDisconnect, useMetamask } from '@thirdweb-dev/react'
+import { fetchWithSignature } from '@/lib/fetchWithSignature'
+import { COOKIE } from '@/constants'
+import { isTokenExpired } from '@/utils'
 
 interface AuthContextProps {
   user: User | null
-  revalidateToken: () => boolean
+  authSignIn: () => Promise<void>
   authSignOut: () => void
   fetchUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
-const COOKIE = {
-  TOKEN_EXPIRATION: 'thirdevent-token_expiration',
-  USER_ID: 'thirdevent-user_id',
-}
-
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const address = useAddress()
+  const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
 
   const [userId, setUserId] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
+
+  const authSignIn = async () => {
+    const wallet = await connectWithMetamask()
+
+    try {
+      const response = await fetchWithSignature('/api/login', wallet, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      console.log(response)
+      if (!response.ok) {
+        disconnect()
+      }
+      const data = await response.json()
+      console.log('data', data, address)
+      revalidateToken()
+    } catch (e) {
+      console.log('e', e)
+      disconnect()
+    }
+  }
 
   const authSignOut = useCallback(() => {
     Cookies.remove(COOKIE.TOKEN_EXPIRATION)
@@ -43,11 +65,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const revalidateToken = useCallback(() => {
     const tokenExpiration = Cookies.get(COOKIE.TOKEN_EXPIRATION)
     const userId = Cookies.get(COOKIE.USER_ID) ?? null
-    if (
-      !userId ||
-      !tokenExpiration ||
-      Number(tokenExpiration) * 1000 < Date.now()
-    ) {
+    if (!userId || isTokenExpired(tokenExpiration)) {
       authSignOut()
       return false
     }
@@ -96,7 +114,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        revalidateToken,
+        authSignIn,
         authSignOut,
         fetchUser,
       }}

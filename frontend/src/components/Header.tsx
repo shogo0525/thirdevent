@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
-import { useDisconnect, useAddress, useMetamask } from '@thirdweb-dev/react'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import {
   Flex,
@@ -22,44 +21,21 @@ import {
   HStack,
   Avatar,
 } from '@chakra-ui/react'
-import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { useAuth } from '@/contexts/AuthProvider'
 
 const Header = () => {
   const router = useRouter()
-  const address = useAddress()
-  const connectWithMetamask = useMetamask()
-  const disconnect = useDisconnect()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { revalidateToken, authSignOut, user } = useAuth()
+  const { authSignIn, authSignOut, user } = useAuth()
 
-  const handleSignIn = async () => {
-    const wallet = await connectWithMetamask()
-
-    try {
-      const response = await fetchWithSignature('/api/login', wallet, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      console.log(response)
-      if (!response.ok) {
-        disconnect()
-      }
-      const data = await response.json()
-      console.log('data', data, address)
-      revalidateToken()
-    } catch (e) {
-      console.log('e', e)
-      disconnect()
-    }
+  const handleSignIn = () => {
+    authSignIn()
   }
-
   const handleSignOut = () => {
     authSignOut()
     onClose()
+    router.push('/')
   }
 
   return (
@@ -84,7 +60,7 @@ const Header = () => {
                   <Text>{user.name}</Text>
                 </HStack>
                 <Text fontSize='sm'>ウォレットアドレス</Text>
-                <Text fontSize='sm'>{address}</Text>
+                <Text fontSize='sm'>{user.walletAddress}</Text>
 
                 <Divider />
               </Stack>
@@ -93,7 +69,7 @@ const Header = () => {
 
           <DrawerBody>
             <Stack>
-              {address && user && (
+              {user && (
                 <>
                   <Link
                     as={NextLink}
@@ -153,7 +129,16 @@ const Header = () => {
           </HStack>
         )}
 
-        {!user && <Button onClick={handleSignIn}>ログイン</Button>}
+        {!user && (
+          <Button
+            colorScheme='white'
+            bg='black'
+            rounded={'full'}
+            onClick={() => router.push('/login')}
+          >
+            ログイン
+          </Button>
+        )}
       </Flex>
     </Flex>
   )
