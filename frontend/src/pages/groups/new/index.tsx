@@ -1,3 +1,4 @@
+import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import NextLink from 'next/link'
 import { useState, useRef, ChangeEvent } from 'react'
@@ -26,8 +27,29 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { useAuth } from '@/contexts/AuthProvider'
+import { COOKIE } from '@/constants'
+import { isTokenExpired } from '@/utils'
 
-export default function Home() {
+interface NewGroupProps {}
+
+export const getServerSideProps: GetServerSideProps<NewGroupProps> = async (
+  context,
+) => {
+  const tokenExpiration = context.req.cookies[COOKIE.TOKEN_EXPIRATION]
+  if (isTokenExpired(tokenExpiration)) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
+  return {
+    props: {},
+  }
+}
+
+const NewGroup = () => {
   const toast = useToast()
   const router = useRouter()
   const { user } = useAuth()
@@ -202,3 +224,5 @@ export default function Home() {
     </Stack>
   )
 }
+
+export default NewGroup
