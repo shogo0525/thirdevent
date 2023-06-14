@@ -35,6 +35,7 @@ interface NewGroupProps {}
 export const getServerSideProps: GetServerSideProps<NewGroupProps> = async (
   context,
 ) => {
+  // TODO: 共通化
   const tokenExpiration = context.req.cookies[COOKIE.TOKEN_EXPIRATION]
   if (isTokenExpired(tokenExpiration)) {
     return {

@@ -78,7 +78,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUser = useCallback(async () => {
     const { data: userData } = await supabase
       .from('users')
-      .select('*')
+      .select('*, groups(*)')
       .eq('id', userId)
       .single()
     console.log('fetUser', userData)
@@ -89,6 +89,13 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       walletAddress: userData.wallet_address,
       name: userData.name,
       thumbnail: userData.thumbnail,
+      groups:
+        userData.groups?.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          contractAddress: d.contract_address,
+          thumbnail: d.thumbnail,
+        })) ?? [],
     }
     setUser(user)
   }, [userId])

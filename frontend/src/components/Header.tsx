@@ -71,22 +71,31 @@ const Header = () => {
             <Stack>
               {user && (
                 <>
-                  <Link
-                    as={NextLink}
-                    color='teal.500'
-                    href={`/users/${user.id}`}
+                  <Button
+                    colorScheme='purple'
+                    onClick={() => {
+                      router.push(`/users/${user.id}`)
+                      onClose()
+                    }}
                   >
                     マイページ
-                  </Link>
+                  </Button>
                   <Button
                     onClick={() => {
                       router.push('/groups/new')
+                      onClose()
                     }}
                   >
                     グループ作成
                   </Button>
-                  {/* TODO */}
-                  <Button onClick={() => {}}>イベント作成</Button>
+                  <Button
+                    onClick={() => {
+                      router.push('/events/new')
+                      onClose()
+                    }}
+                  >
+                    イベント作成
+                  </Button>
                 </>
               )}
             </Stack>
@@ -94,7 +103,11 @@ const Header = () => {
 
           <DrawerFooter>
             {user && (
-              <Button onClick={handleSignOut} colorScheme={'red'}>
+              <Button
+                onClick={handleSignOut}
+                colorScheme='black'
+                variant='link'
+              >
                 ログアウト
               </Button>
             )}

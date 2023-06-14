@@ -6,17 +6,12 @@ import supabase from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 import { ethers } from 'ethers'
 import {
-  useSDK,
-  Web3Button,
   useAddress,
   useContract,
   useContractRead,
   useContractWrite,
-  useContractEvents,
 } from '@thirdweb-dev/react'
 import { ThirdwebSDK } from '@thirdweb-dev/sdk'
-import { CONTRACT_ADDRESSES } from '@/contracts/constants'
-import GroupFactoryAbi from '@/contracts/GroupFactoryAbi.json'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import {
   Container,
