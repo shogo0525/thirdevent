@@ -7,7 +7,7 @@ export const handler = async (
   res: NextApiResponse<any>,
 ) => {
   if (req.method === 'POST') {
-    const { contractAddress, eventId, ticketIndex } = req.body
+    const { contractAddress, eventId, ticketIndex, code } = req.body
     const userWalletAddress = req.headers['x-thirdevent-address'] as string
 
     const { data, error } = await supabase
@@ -29,6 +29,13 @@ export const handler = async (
     const { rule_type, rule_value } = data
     if (rule_type === 'allowlist') {
       if (rule_value.includes(userWalletAddress)) {
+        console.log('you can mint!')
+        canMint = true
+      }
+    }
+
+    if (rule_type === 'code') {
+      if (rule_value.includes(code)) {
         console.log('you can mint!')
         canMint = true
       }
