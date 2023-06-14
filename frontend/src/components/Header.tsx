@@ -22,16 +22,16 @@ import {
   Avatar,
 } from '@chakra-ui/react'
 import { useAuth } from '@/contexts/AuthProvider'
+import { useAddress, useMetamask } from '@thirdweb-dev/react'
 
 const Header = () => {
+  const address = useAddress()
+  const connectWithMetamask = useMetamask()
   const router = useRouter()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { authSignIn, authSignOut, user } = useAuth()
+  const { authSignOut, user } = useAuth()
 
-  const handleSignIn = () => {
-    authSignIn()
-  }
   const handleSignOut = () => {
     authSignOut()
     onClose()
@@ -137,6 +137,16 @@ const Header = () => {
             onClick={() => router.push('/login')}
           >
             ログイン
+          </Button>
+        )}
+        {!address && (
+          <Button
+            colorScheme='white'
+            bg='black'
+            rounded={'full'}
+            onClick={() => connectWithMetamask()}
+          >
+            ウォレット接続
           </Button>
         )}
       </Flex>
