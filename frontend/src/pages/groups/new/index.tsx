@@ -30,6 +30,7 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 import { COOKIE } from '@/constants'
 import { isTokenExpired } from '@/utils'
+import { getEventFromReceipt } from '@/utils'
 
 interface NewGroupProps {}
 
@@ -143,7 +144,15 @@ const NewGroup = () => {
       const { receipt } = await mutateCreateGroup({
         args: [groupId, jsonPublicUrl],
       })
-      const groupAddress = (receipt as any).events[0].address
+      const event = getEventFromReceipt(receipt, 'GroupCreated')
+
+      if (!event) {
+        // TODO:
+        console.log('error')
+        return
+      }
+
+      const groupAddress = event.args._groupAddress
 
       const { error } = await supabase.from('groups').insert({
         id: groupId,

@@ -67,6 +67,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
     }
   }
 
+  // TODO: constants
   const sdk = new ThirdwebSDK('mumbai')
   const balance = await sdk.getBalance(groupData.contract_address)
 
@@ -114,41 +115,9 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
   ])
   const isGroupMember = Number(groupNftCount) > 0
 
-  const [eventTitle, setEventTitle] = useState('')
-  const handleEventTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setEventTitle(event.target.value)
-  }
-
   const [newMemberAddress, setNewMemberAddress] = useState('')
   const handleMemberAddressChange = (event: ChangeEvent<HTMLInputElement>) => {
     setNewMemberAddress(event.target.value)
-  }
-
-  const { mutateAsync: mutateCreateEvent, isLoading: isCreatingEvent } =
-    useContractWrite(groupContract, 'createEvent')
-  const createEvent = async () => {
-    try {
-      const eventId = uuidv4()
-      const { receipt } = await mutateCreateEvent({
-        args: [eventId],
-      })
-      const eventAddress = (receipt as any).events[0].address
-
-      const { error } = await supabase.from('events').insert({
-        id: eventId,
-        group_id: group.id,
-        contract_address: eventAddress,
-        title: eventTitle,
-      })
-
-      if (error) {
-        console.error('Error inserting data:', error)
-      }
-
-      router.push(`/events/${eventId}`)
-    } catch (e) {
-      console.log('e', e)
-    }
   }
 
   const { mutateAsync: mutateAddMember, isLoading: isAddingMember } =
@@ -289,15 +258,11 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
               <Divider />
               <Heading fontSize={'md'}>グループメンバー向け機能</Heading>
 
-              <Input
-                placeholder='Enter Group Name'
-                value={eventTitle}
-                onChange={handleEventTitleChange}
-              />
               <Button
-                isLoading={isCreatingEvent}
-                onClick={createEvent}
-                isDisabled={!eventTitle}
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+                onClick={() => router.push('/events/new')}
               >
                 イベントを作成
               </Button>

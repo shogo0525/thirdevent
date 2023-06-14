@@ -80,7 +80,7 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
 const UserDetail = ({ user }: UserDetailProps) => {
   const toast = useToast()
   const { user: authUser, fetchUser } = useAuth()
-  console.log('authUser', authUser)
+
   const isAuthUser = user.id === authUser?.id
   const { isOpen, onOpen, onClose } = useDisclosure()
 
@@ -203,12 +203,14 @@ const UserDetail = ({ user }: UserDetailProps) => {
           bg='white'
           rounded={'lg'}
         >
-          <HStack>
+          <HStack spacing={4}>
             <Avatar
               src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
               size='xl'
             />
-            <Text>{isAuthUser ? authUser?.name : user.name}</Text>
+            <Text fontSize={'xl'}>
+              {isAuthUser ? authUser?.name : user.name}
+            </Text>
           </HStack>
           {isAuthUser ? (
             <Button

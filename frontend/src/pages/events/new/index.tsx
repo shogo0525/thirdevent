@@ -1,6 +1,4 @@
 import { GetServerSideProps } from 'next'
-import Head from 'next/head'
-import NextLink from 'next/link'
 import { useState, useRef, ChangeEvent } from 'react'
 import { useRouter } from 'next/router'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,6 +18,7 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 import { COOKIE } from '@/constants'
 import { isTokenExpired } from '@/utils'
+import { getEventFromReceipt } from '@/utils'
 
 interface NewEventProps {}
 
@@ -112,7 +111,16 @@ const NewEvent = () => {
       const { receipt } = await mutateCreateEvent({
         args: [eventId],
       })
-      const eventAddress = (receipt as any).events[0].address
+
+      const event = getEventFromReceipt(receipt, 'EventCreated')
+
+      if (!event) {
+        // TODO:
+        console.log('error')
+        return
+      }
+
+      const eventAddress = event.args[1]
 
       const { error } = await supabase.from('events').insert({
         id: eventId,
