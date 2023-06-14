@@ -110,12 +110,25 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
 
 const useIsClaimExpired = (claimEndDate: string) => {
   const [isExpired, setIsExpired] = useState<boolean>(false)
+  const [serverTime, setServerTime] = useState(null)
 
   useEffect(() => {
-    const now = new Date()
-    const claimEnd = new Date(claimEndDate)
-    setIsExpired(now > claimEnd)
-  }, [claimEndDate])
+    const fetchTime = async () => {
+      const res = await fetch('/api/current-time')
+      const { currentTime } = await res.json()
+      setServerTime(currentTime)
+    }
+    fetchTime()
+  }, [])
+
+  useEffect(() => {
+    if (serverTime) {
+      const now = new Date(serverTime)
+      const claimEnd = new Date(claimEndDate)
+      setIsExpired(now > claimEnd)
+    }
+  }, [claimEndDate, serverTime])
+
   console.log('isExpired', isExpired)
   return isExpired
 }
