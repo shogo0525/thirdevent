@@ -25,12 +25,17 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const address = useAddress()
-
   const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
 
   const [userId, setUserId] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
+
+  React.useEffect(() => {
+    if ((window.ethereum as any).selectedAddress) {
+      connectWithMetamask()
+    }
+  }, [connectWithMetamask])
 
   const authSignIn = async () => {
     const wallet = await connectWithMetamask()
