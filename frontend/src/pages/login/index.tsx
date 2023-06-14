@@ -34,14 +34,14 @@ export const getServerSideProps: GetServerSideProps<LoginProps> = async (
     'isTokenExpired(tokenExpiration)',
     isTokenExpired(tokenExpiration),
   )
-  if (!isTokenExpired(tokenExpiration)) {
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    }
-  }
+  // if (!isTokenExpired(tokenExpiration)) {
+  //   return {
+  //     redirect: {
+  //       destination: '/',
+  //       permanent: false,
+  //     },
+  //   }
+  // }
 
   return {
     props: {},
