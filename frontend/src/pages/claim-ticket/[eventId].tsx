@@ -40,6 +40,7 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  Tooltip,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
 import type { Event, Ticket, MintRule, TicketOwner } from '@/types'
@@ -52,12 +53,13 @@ import QRCode from 'qrcode'
 
 interface ClaimTicketProps {
   event: Event
+  claimEndDate: string
 }
 
 export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
   context,
 ) => {
-  const { eventId } = context.query
+  const { eventId, claim_id } = context.query
 
   const { data: eventData } = await supabase
     .from('events')
@@ -84,17 +86,45 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
     },
   }
 
+  const { data: claimData } = await supabase
+    .from('claims')
+    .select('*')
+    .eq('id', claim_id)
+    .maybeSingle()
+
+  if (!claimData) {
+    return {
+      notFound: true,
+    }
+  }
+
+  const claimEndDate: string = claimData.claim_end_date
+
   return {
     props: {
       event,
+      claimEndDate,
     },
   }
 }
 
-const ClaimTicket = ({ event }: ClaimTicketProps) => {
+const useIsClaimExpired = (claimEndDate: string) => {
+  const [isExpired, setIsExpired] = useState<boolean>(false)
+
+  useEffect(() => {
+    const now = new Date()
+    const claimEnd = new Date(claimEndDate)
+    setIsExpired(now > claimEnd)
+  }, [claimEndDate])
+  console.log('isExpired', isExpired)
+  return isExpired
+}
+
+const ClaimTicket = ({ event, claimEndDate }: ClaimTicketProps) => {
   const connectedWallet = useConnectedWallet()
   const sdk = useSDK()
   const address = useAddress()
+  const isClaimExpired = useIsClaimExpired(claimEndDate)
 
   const [tokenIds, setTokenIds] = useState<number[]>([])
 
@@ -153,9 +183,24 @@ const ClaimTicket = ({ event }: ClaimTicketProps) => {
       </Link>
 
       {tokenIds.map((tokenId) => (
-        <Button key={tokenId} onClick={() => claimTicket(tokenId)}>
-          Claim Ticket {tokenId}
-        </Button>
+        <Box key={tokenId}>
+          <Tooltip
+            label={isClaimExpired ? 'Claim period has ended.' : ''}
+            aria-label='A tooltip explaining why the button is disabled'
+          >
+            <span>
+              <Button
+                onClick={() => claimTicket(tokenId)}
+                isDisabled={isClaimExpired}
+              >
+                Claim Ticket {tokenId}
+              </Button>
+            </span>
+          </Tooltip>
+          <Text fontSize='sm' mt={2}>
+            {`Claim End Date: ${new Date(claimEndDate).toLocaleDateString()}`}
+          </Text>
+        </Box>
       ))}
     </Stack>
   )
