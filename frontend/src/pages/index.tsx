@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import supabase from '@/lib/supabase'
-import { Event } from '@/types'
+import { Event, Group } from '@/types'
 import {
   Stack,
   Box,
@@ -20,40 +20,57 @@ import {
 
 interface HomeProps {
   events: Event[]
+  groups: Group[]
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const { data } = await supabase
+  const { data: eventData } = await supabase
     .from('events')
     .select('*, group:groups(*)')
+    .neq('thumbnail', null)
+
+  const { data: groupData } = await supabase
+    .from('groups')
+    .select('*')
     .neq('thumbnail', null)
   // console.log(data)
 
   const events =
-    data?.map(
-      (d) =>
-        ({
-          id: d.id,
-          contractAddress: d.contract_address,
-          title: d.title,
-          thumbnail: d.thumbnail,
-          group: {
-            id: d.group.id,
-            name: d.group.name,
-            contractAddress: d.group.contract_address,
-          },
-        } as Event),
-    ) ?? []
+    eventData?.map((d) => {
+      const event: Event = {
+        id: d.id,
+        contractAddress: d.contract_address,
+        title: d.title,
+        thumbnail: d.thumbnail,
+        group: {
+          id: d.group.id,
+          name: d.group.name,
+          contractAddress: d.group.contract_address,
+        },
+      }
+      return event
+    }) ?? []
 
-  // フェッチしたデータをプロップスとして返す
+  const groups =
+    groupData?.map((d) => {
+      const group: Group = {
+        id: d.id,
+        contractAddress: d.contract_address,
+        name: d.name,
+        thumbnail: d.thumbnail,
+      }
+      return group
+    }) ?? []
+
   return {
     props: {
       events,
+      groups,
     },
   }
 }
 
-const Home = ({ events }: HomeProps) => {
+const Home = ({ events, groups }: HomeProps) => {
   return (
     <>
       <Head>
@@ -62,10 +79,9 @@ const Home = ({ events }: HomeProps) => {
         <meta name='viewport' content='width=device-width, initial-scale=1' />
         <link rel='icon' href='/favicon.ico' />
       </Head>
-      <Stack>
+      <Stack spacing={6}>
         <Heading size='md'>イベント一覧</Heading>
-
-        <Flex gap={4} mt={6} flexWrap={'wrap'}>
+        <Flex gap={4} flexWrap={'wrap'}>
           {events.map((event) => (
             <Link
               key={event.id}
@@ -92,8 +108,44 @@ const Home = ({ events }: HomeProps) => {
                       {event.title}
                     </Text>
 
-                    <Text color='teal.500' fontSize='2xl'>
-                      5月1日
+                    <Text fontSize='sm' noOfLines={2} height='40px'>
+                      主催：{event.group.name}
+                    </Text>
+                  </Stack>
+                </CardBody>
+              </Card>
+            </Link>
+          ))}
+        </Flex>
+
+        <Heading size='md' mt={6}>
+          グループ一覧
+        </Heading>
+        <Flex gap={4} flexWrap={'wrap'}>
+          {groups.map((group) => (
+            <Link
+              key={group.id}
+              href={`groups/${group.id}`}
+              textDecoration='none !important'
+            >
+              <Card maxW='sm' width='200px' borderRadius='lg'>
+                <CardBody p={0}>
+                  <Image
+                    src={group.thumbnail}
+                    alt={group.name}
+                    borderTopRadius='lg'
+                    boxSize={'150px'}
+                    width='100%'
+                    objectFit='cover'
+                  />
+                  <Stack mt={2} spacing={3} p={2}>
+                    <Text
+                      fontSize='sm'
+                      fontWeight='bold'
+                      noOfLines={2}
+                      height='40px'
+                    >
+                      {group.name}
                     </Text>
                   </Stack>
                 </CardBody>
