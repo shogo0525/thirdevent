@@ -23,7 +23,7 @@ export const handler = async (
         .map((add) => add.toLowerCase())
         .includes(userWalletAddress.toLowerCase())
     ) {
-      res.status(400).json({ message: 'You cannot mint.' })
+      res.status(400).json({ message: 'You cannot claim.' })
       return
     }
 

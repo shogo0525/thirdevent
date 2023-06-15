@@ -20,6 +20,8 @@ async function main() {
   const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
   const groupId = uuidv4()
   const eventId = uuidv4()
+  // TODO
+  const userId = 'ef2d3685-67cf-4dd6-ace6-97ea8eb8597b'
   const groupName = `Group Name at ${now}`
   const eventTitle = `Event title at ${now}`
 
@@ -32,15 +34,18 @@ async function main() {
     id: groupId,
     name: groupName,
     contract_address: groupAddress,
-    creator_address: owner.address,
+    // TODO
+    created_user_id: userId,
     thumbnail:
       'https://ybtsfvbufxodsocxuwwx.supabase.co/storage/v1/object/public/images/groups/sample/people1.jpg',
   })
 
-  const { error: error2 } = await supabase
-    .from('group_member')
-    .insert({ group_id: groupId, member_address: owner.address })
+  console.log('error', error)
 
+  const { error: error2 } = await supabase
+    .from('members')
+    .insert({ group_id: groupId, user_id: userId })
+  console.log('error2', error2)
   if (!groupAddress) {
     return
   }
@@ -78,9 +83,12 @@ async function main() {
   const event = Event.attach(eventAddress)
   saveFrontendFiles('Event', event.address)
 
+  const ticketId = uuidv4()
+  const ticketName = '無料チケット'
   await group.addTicketType(
     eventAddress,
-    '無料チケット',
+    ticketId,
+    ticketName,
     ethers.utils.parseEther('0'),
     10,
     0,
@@ -97,6 +105,14 @@ async function main() {
   //   true,
   // )
   console.log('Added TicketType')
+
+  const { error: error4 } = await supabase.from('tickets').insert({
+    id: ticketId,
+    event_id: eventId,
+    name: ticketName,
+    thumbnail:
+      'https://images.unsplash.com/photo-1635070636690-d887c1a77e7b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80',
+  })
 
   await sleep(15)
 

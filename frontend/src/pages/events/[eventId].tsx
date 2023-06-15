@@ -16,6 +16,7 @@ import GroupAbi from '@/contracts/GroupAbi.json'
 import EventAbi from '@/contracts/EventAbi.json'
 import {
   Container,
+  HStack,
   Stack,
   Flex,
   Badge,
@@ -39,10 +40,9 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
-  HStack,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
-import type { Event, Ticket, MintRule, TicketOwner } from '@/types'
+import type { Event, Ticket, TicketOwner } from '@/types'
 import { truncateContractAddress } from '@/utils'
 import { MultiLineBody } from '@/components/MultiLineBody'
 import alchemyClient from '@/lib/alchemy'
@@ -52,10 +52,7 @@ import QRCode from 'qrcode'
 
 interface EventDetailProps {
   event: Event
-  mintRules: MintRule[]
   ticketOwners: TicketOwner[]
-  claimTicketUrl: string
-  claimQRCode: string
 }
 
 export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
@@ -66,27 +63,16 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
 
   const { data: eventData } = await supabase
     .from('events')
-    .select('*, group:groups(*)')
+    .select('*, group:groups(*), tickets(id, name, thumbnail, rule_type)')
     .eq('id', eventId)
     .maybeSingle()
-  // console.log(eventData)
+  console.log(eventData)
 
   if (!eventData) {
     return {
       notFound: true,
     }
   }
-
-  const { data: mintRuleData } = await supabase
-    .from('mint_rules')
-    .select('event_id, ticket_index, rule_type')
-    .eq('event_id', eventId)
-
-  const mintRules: MintRule[] = (mintRuleData ?? []).map((d) => ({
-    eventId: d.event_id,
-    ticketIndex: d.ticket_index,
-    ruleType: d.rule_type,
-  }))
 
   const event: Event = {
     id: eventData.id,
@@ -99,6 +85,12 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
       name: eventData.group.name,
       contractAddress: eventData.group.contract_address,
     },
+    tickets: eventData.tickets.map((t: any) => ({
+      ticketId: t.id,
+      name: t.name,
+      thumbnail: t.thumbnail,
+      ruleType: t.rule_type,
+    })),
   }
 
   const { owners } = await alchemyClient.nft.getOwnersForContract(
@@ -130,27 +122,15 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
     }
   })
 
-  const claimTicketUrl = `${proto}://${host}/claim-ticket/${eventId}`
-  const claimQRCode = await QRCode.toDataURL(claimTicketUrl)
-
   return {
     props: {
       event,
-      mintRules,
       ticketOwners,
-      claimTicketUrl,
-      claimQRCode,
     },
   }
 }
 
-const EventDetail = ({
-  event,
-  mintRules,
-  ticketOwners,
-  claimTicketUrl,
-  claimQRCode,
-}: EventDetailProps) => {
+const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
   const connectedWallet = useConnectedWallet()
   const address = useAddress()
 
@@ -169,77 +149,32 @@ const EventDetail = ({
   ])
   const isGroupMember = Number(groupNftCount) > 0
 
-  // TODO: indexで管理が正しいか検討
   const { data: ticketTypes } = useContractRead(
     eventContract,
     'getAllTicketTypes',
   )
   // console.log('ticketTypes', ticketTypes)
 
-  const tickets = (ticketTypes?.map((ticket: Ticket, i: number) => {
-    const mintRule = mintRules.find((rule) => rule.ticketIndex === i)
-    return {
-      ...ticket,
-      ...(ticket.requireSignature
-        ? {
-            ruleType: mintRule?.ruleType,
-          }
-        : null),
-    }
-  }) ?? []) as Ticket[]
+  const tickets: Ticket[] = (ticketTypes ?? []).map(
+    (ticket: Ticket, i: number) => {
+      const ticketMetadata = event.tickets.find(
+        (t) => t.ticketId === ticket.ticketId,
+      )
+      console.log('ticketMetadata', ticketMetadata)
+      return {
+        ...ticket,
+        ruleType: ticketMetadata?.ruleType,
+      }
+    },
+  )
   console.log('tickets', tickets)
 
-  const {
-    mutateAsync: mutateAddTicketType,
-    isLoading,
-    error,
-  } = useContractWrite(groupContract, 'addTicketType')
-
-  const addTicketType = async () => {
-    // const ticketType = [
-    //   event.contractAddress,
-    //   '無料チケット',
-    //   // ethers.utils.parseEther('0.0002'),
-    //   ethers.utils.parseEther('0'),
-    //   5,
-    //   1,
-    //   'https://example.com/ticket-metadata',
-    //   false,
-    // ]
-    const ticketType = [
-      event.contractAddress,
-      '有料チケット',
-      // ethers.utils.parseEther('0.0002'),
-      ethers.utils.parseEther('0.0001'),
-      5,
-      1,
-      'https://example.com/ticket-metadata',
-      false,
-    ]
-    // const ticketType = [
-    //   event.contractAddress,
-    //   '署名チケット',
-    //   // ethers.utils.parseEther('0.0002'),
-    //   ethers.utils.parseEther('0'),
-    //   5,
-    //   1,
-    //   'https://example.com/ticket-metadata',
-    //   true,
-    // ]
-    try {
-      const { receipt } = await mutateAddTicketType({ args: ticketType })
-      console.log('receipt', receipt)
-    } catch (e) {
-      console.log('e', e)
-    }
-  }
-
-  const { mutateAsync: mutateMint, isLoading: isMinting } = useContractWrite(
+  const { mutateAsync: mutateMint, isLoading } = useContractWrite(
     eventContract,
     'mint',
   )
   const mintTicket = async (
-    ticketTypeIndex: number,
+    ticketId: string,
     costWei: number,
     requireSignature: boolean,
     code?: string,
@@ -255,7 +190,7 @@ const EventDetail = ({
             body: JSON.stringify({
               contractAddress: event.contractAddress,
               eventId: event.id,
-              ticketIndex: ticketTypeIndex,
+              ticketId,
               code,
             }),
           },
@@ -268,7 +203,7 @@ const EventDetail = ({
         }
 
         const { receipt } = await mutateMint({
-          args: [ticketTypeIndex, signature],
+          args: [ticketId, signature],
           overrides: { value: costWei },
         })
 
@@ -276,7 +211,7 @@ const EventDetail = ({
       }
 
       const { receipt } = await mutateMint({
-        args: [ticketTypeIndex, '0x'],
+        args: [ticketId, '0x'],
         overrides: { value: costWei },
       })
     } catch (e) {
@@ -306,9 +241,15 @@ const EventDetail = ({
     },
   ]
 
-  const onSubmitHandler = async (data: TicketFormData) => {
+  const { mutateAsync: mutateAddTicketType, error } = useContractWrite(
+    groupContract,
+    'addTicketType',
+  )
+
+  const onSubmitHandler = async (newTicketId: string, data: TicketFormData) => {
     const ticketType = [
       event.contractAddress,
+      newTicketId,
       data.name,
       ethers.utils.parseEther(data.fee),
       data.maxParticipants,
@@ -319,6 +260,7 @@ const EventDetail = ({
     try {
       const { receipt } = await mutateAddTicketType({ args: ticketType })
       console.log('receipt', receipt)
+      onClose()
     } catch (e) {
       console.log('e', e)
     }
@@ -336,7 +278,7 @@ const EventDetail = ({
               <ModalHeader>チケット作成</ModalHeader>
               <ModalCloseButton />
               <ModalBody>
-                <TicketForm onSubmitHandler={onSubmitHandler} />
+                <TicketForm event={event} onSubmitHandler={onSubmitHandler} />
               </ModalBody>
             </ModalContent>
           </Modal>
@@ -369,14 +311,20 @@ const EventDetail = ({
 
           {tickets.length > 0 && (
             <Stack>
-              {tickets.map((ticket, i: number) => (
-                <TicketCard
-                  key={i}
-                  ticketIndex={i}
-                  ticket={ticket}
-                  onClick={mintTicket}
-                />
-              ))}
+              {tickets.map((ticket, i: number) => {
+                const ticketMetadata = event.tickets.find(
+                  (t) => t.ticketId === ticket.ticketId,
+                )
+
+                return (
+                  <TicketCard
+                    key={i}
+                    ticket={ticket}
+                    thumbnail={ticketMetadata?.thumbnail}
+                    onClick={mintTicket}
+                  />
+                )
+              })}
             </Stack>
           )}
           {isGroupMember && (
@@ -461,21 +409,6 @@ const EventDetail = ({
               </Stack>
             </CardBody>
           </Card>
-
-          {isGroupMember && (
-            <>
-              <Text>参加受付用QRコード</Text>
-              <Link
-                as={NextLink}
-                color='teal.500'
-                href={claimTicketUrl}
-                textDecoration='none !important'
-              >
-                {claimTicketUrl}
-              </Link>
-              <Image mt={4} src={claimQRCode} alt='qr' width='200px' />
-            </>
-          )}
         </Stack>
       </GridItem>
     </Grid>

@@ -16,6 +16,7 @@ contract Event is ERC721, Ownable {
   Counters.Counter private tokenIdCounter;
 
   struct TicketType {
+    string ticketId;
     string name;
     uint256 fee; // wei
     uint256 maxParticipants;
@@ -25,12 +26,13 @@ contract Event is ERC721, Ownable {
     bool requireSignature;
   }
   TicketType[] private ticketTypes;
+  mapping(uint256 => string) private ticketIdByTokenId;
+  mapping(string => uint256) private ticketTypeIndexByTicketId;
 
   string public eventId;
   mapping(uint256 => bool) public isClaimed;
 
-  mapping(address => mapping(uint256 => bool)) private ownerHasTicketType;
-  mapping(uint256 => uint256) private tokenTypeIndexByTokenId;
+  mapping(address => mapping(string => bool)) private ownerHasTicketType;
 
   address payable private platformAddress = payable(0xC274Db247360D9aA845E7F45775cB089B4622Ffe);
   address private signer = 0xC274Db247360D9aA845E7F45775cB089B4622Ffe;
@@ -45,55 +47,58 @@ contract Event is ERC721, Ownable {
     uint256 _tokenId
   ) public view override returns (string memory) {
     require(_exists(_tokenId), 'Nonexistent token');
-    return ticketTypes[tokenTypeIndexByTokenId[_tokenId]].metadataURI;
+    return ticketTypes[ticketTypeIndexByTicketId[ticketIdByTokenId[_tokenId]] - 1].metadataURI;
   }
 
-  function mint(uint256 _ticketTypeIndex, bytes calldata _signature) public payable {
+  function mint(string memory _ticketId, bytes calldata _signature) public payable {
     require(ticketTypes.length != 0, 'No ticket');
+    // require(
+    //   _ticketTypeIndex < ticketTypes.length,
+    //   'Invalid ticket'
+    // );
     require(
-      _ticketTypeIndex < ticketTypes.length,
-      'Invalid ticket'
-    );
-    require(
-      ownerHasTicketType[msg.sender][_ticketTypeIndex] == false,
+      ownerHasTicketType[msg.sender][_ticketId] == false,
       'Ticket bought'
     );
     require(
-      ticketTypes[_ticketTypeIndex].currentParticipants < ticketTypes[_ticketTypeIndex].maxParticipants,
+      ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].currentParticipants < ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].maxParticipants,
       'No slots'
     );
-    require((ticketTypes[_ticketTypeIndex].fee > 0 && msg.value == ticketTypes[_ticketTypeIndex].fee) || (ticketTypes[_ticketTypeIndex].fee == 0 && msg.value == 0), 'Incorrect fee');
+    require((ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].fee > 0 && msg.value == ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].fee) || (ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].fee == 0 && msg.value == 0), 'Incorrect fee');
 
-    if (ticketTypes[_ticketTypeIndex].requireSignature) {
-      bytes32 hash = keccak256(abi.encodePacked(address(this), msg.sender, _ticketTypeIndex));
+    if (ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].requireSignature) {
+      bytes32 hash = keccak256(abi.encodePacked(address(this), msg.sender, _ticketId));
       require(hash.toEthSignedMessageHash().recover(_signature) == signer, 'Invalid signature');
     }
 
-    _mint(_ticketTypeIndex);
+    _mint(_ticketId);
 
-    if (ticketTypes[_ticketTypeIndex].fee > 0) {
+    if (ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].fee > 0) {
       sendPlatformFee(msg.value);
     }
   }
 
-  function _mint(uint256 _ticketTypeIndex) private {
+  function _mint(string memory _ticketId) private {
     uint256 tokenId = tokenIdCounter.current();
     tokenIdCounter.increment();
     _safeMint(msg.sender, tokenId);
+    
 
-    ticketTypes[_ticketTypeIndex].currentParticipants++;
-    tokenTypeIndexByTokenId[tokenId] = _ticketTypeIndex;
-    ownerHasTicketType[msg.sender][_ticketTypeIndex] = true;
+    ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].currentParticipants++;
+    ticketIdByTokenId[tokenId] = _ticketId;
+    ownerHasTicketType[msg.sender][_ticketId] = true;
   }
 
   function claim(uint256 _tokenId, bytes calldata _signature) public {
     require(_exists(_tokenId), 'Nonexistent token');
+    require(ownerOf(_tokenId) == msg.sender, 'Not the token owner');
     bytes32 hash = keccak256(abi.encodePacked(address(this), msg.sender, _tokenId));
     require(hash.toEthSignedMessageHash().recover(_signature) == signer, 'Invalid signature');
     isClaimed[_tokenId] = true;
   }
 
   function addTicketType(
+    string memory _ticketId,
     string memory _name,
     uint256 _fee,
     uint256 _maxParticipants,
@@ -103,6 +108,7 @@ contract Event is ERC721, Ownable {
   ) public onlyOwner {
     ticketTypes.push(
       TicketType({
+        ticketId: _ticketId,
         name: _name,
         fee: _fee,
         maxParticipants: _maxParticipants,
@@ -112,6 +118,7 @@ contract Event is ERC721, Ownable {
         requireSignature: _requireSignature
       })
     );
+    ticketTypeIndexByTicketId[_ticketId] = ticketTypes.length;
   }
 
   function getAllTicketTypes() public view returns (TicketType[] memory) {
