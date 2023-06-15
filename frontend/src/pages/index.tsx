@@ -16,6 +16,7 @@ import {
   CardBody,
   CardFooter,
   Image,
+  SimpleGrid,
 } from '@chakra-ui/react'
 
 interface HomeProps {
@@ -35,32 +36,30 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     .neq('thumbnail', null)
   // console.log(data)
 
-  const events =
-    eventData?.map((d) => {
-      const event: Event = {
-        id: d.id,
-        contractAddress: d.contract_address,
-        title: d.title,
-        thumbnail: d.thumbnail,
-        group: {
-          id: d.group.id,
-          name: d.group.name,
-          contractAddress: d.group.contract_address,
-        },
-      }
-      return event
-    }) ?? []
+  const events = (eventData ?? []).map((d) => {
+    const event: Event = {
+      id: d.id,
+      contractAddress: d.contract_address,
+      title: d.title,
+      thumbnail: d.thumbnail,
+      group: {
+        id: d.group.id,
+        name: d.group.name,
+        contractAddress: d.group.contract_address,
+      },
+    }
+    return event
+  })
 
-  const groups =
-    groupData?.map((d) => {
-      const group: Group = {
-        id: d.id,
-        contractAddress: d.contract_address,
-        name: d.name,
-        thumbnail: d.thumbnail,
-      }
-      return group
-    }) ?? []
+  const groups = (groupData ?? []).map((d) => {
+    const group: Group = {
+      id: d.id,
+      contractAddress: d.contract_address,
+      name: d.name,
+      thumbnail: d.thumbnail,
+    }
+    return group
+  })
 
   return {
     props: {
@@ -76,14 +75,14 @@ const Home = ({ events, groups }: HomeProps) => {
       <MyHead />
       <Stack spacing={6}>
         <Heading size='md'>イベント一覧</Heading>
-        <Flex gap={4} flexWrap={'wrap'}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
           {events.map((event) => (
             <Link
               key={event.id}
               href={`events/${event.id}`}
               textDecoration='none !important'
             >
-              <Card maxW='sm' width='200px' borderRadius='lg'>
+              <Card borderRadius='lg'>
                 <CardBody p={0}>
                   <Image
                     src={event.thumbnail}
@@ -111,19 +110,19 @@ const Home = ({ events, groups }: HomeProps) => {
               </Card>
             </Link>
           ))}
-        </Flex>
+        </SimpleGrid>
 
         <Heading size='md' mt={6}>
           グループ一覧
         </Heading>
-        <Flex gap={4} flexWrap={'wrap'}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
           {groups.map((group) => (
             <Link
               key={group.id}
               href={`groups/${group.id}`}
               textDecoration='none !important'
             >
-              <Card maxW='sm' width='200px' borderRadius='lg'>
+              <Card borderRadius='lg'>
                 <CardBody p={0}>
                   <Image
                     src={group.thumbnail}
@@ -147,7 +146,7 @@ const Home = ({ events, groups }: HomeProps) => {
               </Card>
             </Link>
           ))}
-        </Flex>
+        </SimpleGrid>
       </Stack>
     </>
   )

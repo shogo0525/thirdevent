@@ -25,8 +25,6 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { useAddress, useMetamask } from '@thirdweb-dev/react'
 
 const Header = () => {
-  const address = useAddress()
-  const connectWithMetamask = useMetamask()
   const router = useRouter()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -39,15 +37,7 @@ const Header = () => {
   }
 
   return (
-    <Flex
-      justifyContent='space-between'
-      alignItems='center'
-      flexDirection={{
-        base: 'column',
-        md: 'row',
-      }}
-      p={3}
-    >
+    <>
       <Drawer isOpen={isOpen} placement='right' onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
@@ -114,59 +104,55 @@ const Header = () => {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-
-      <Link as={NextLink} href='/' textDecoration='none !important'>
-        <Text
-          fontSize='4xl'
-          fontWeight='bold'
-          bgGradient='linear-gradient(45deg, #FF0080, #7928CA)'
-          bgClip='text'
-        >
-          thirdevent
-        </Text>
-      </Link>
-      <Flex justifyContent='space-between' alignItems='center' gap={4}>
-        {user && (
-          <HStack spacing={4}>
-            <IconButton
-              variant='ghost'
-              fontSize='4xl'
-              _hover={{ background: 'transparent' }}
-              onClick={onOpen}
-              aria-label='menu'
-              icon={<HamburgerIcon />}
-            />
-            <Link as={NextLink} href={`/users/${user?.id}`}>
-              <Avatar src={user?.thumbnail} size='md' />
-            </Link>
-          </HStack>
-        )}
-
-        {!user && (
-          <Button
-            colorScheme='white'
-            bg='black'
-            rounded={'full'}
-            onClick={authSignIn}
+      <Flex
+        justifyContent='space-between'
+        alignItems='center'
+        flexDirection={{
+          base: 'column',
+          sm: 'row',
+        }}
+        p={3}
+      >
+        <Link as={NextLink} href='/' textDecoration='none !important'>
+          <Text
+            fontSize='4xl'
+            fontWeight='bold'
+            bgGradient='linear-gradient(45deg, #FF0080, #7928CA)'
+            bgClip='text'
           >
-            ログイン
-          </Button>
-        )}
+            thirdevent
+          </Text>
+        </Link>
+        <Flex justifyContent='space-between' alignItems='center' gap={4}>
+          {user && (
+            <HStack spacing={4}>
+              <IconButton
+                variant='ghost'
+                fontSize='4xl'
+                _hover={{ background: 'transparent' }}
+                onClick={onOpen}
+                aria-label='menu'
+                icon={<HamburgerIcon />}
+              />
+              <Link as={NextLink} href={`/users/${user?.id}`}>
+                <Avatar src={user?.thumbnail} size='md' />
+              </Link>
+            </HStack>
+          )}
 
-        {/* TODO: delete after `auto connect bug of thirdweb` is fixed */}
-        {/* @see: https://github.com/thirdweb-dev/js/issues/1018 */}
-        {/* {!address && (
-          <Button
-            colorScheme='white'
-            bg='black'
-            rounded={'full'}
-            onClick={() => connectWithMetamask()}
-          >
-            ウォレット接続
-          </Button>
-        )} */}
+          {!user && (
+            <Button
+              colorScheme='white'
+              bg='black'
+              rounded={'full'}
+              onClick={authSignIn}
+            >
+              ログイン
+            </Button>
+          )}
+        </Flex>
       </Flex>
-    </Flex>
+    </>
   )
 }
 

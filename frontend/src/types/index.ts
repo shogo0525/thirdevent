@@ -34,7 +34,7 @@ export type Event = {
     name: string
     contractAddress: string
   }
-  tickets: TicketMetadata[]
+  tickets?: TicketMetadata[]
 }
 
 export type TicketRuleType = 'allowlist' | 'code' | 'nft'
@@ -61,11 +61,4 @@ export type Claim = {
   id: string
   eventId: string
   claimEndDate: string
-}
-
-export type TicketOwner = {
-  walletAddress: string
-  tokenIds: number[]
-  userId?: string
-  nickname?: string
 }

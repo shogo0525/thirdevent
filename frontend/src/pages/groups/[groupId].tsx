@@ -293,7 +293,6 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
                       <Input
                         placeholder='メンバー検索'
                         value={newMember?.walletAddress}
-                        // onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => searchUser()}
                       />
                     </PopoverTrigger>

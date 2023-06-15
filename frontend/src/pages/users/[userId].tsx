@@ -23,6 +23,7 @@ import {
   CardFooter,
   Avatar,
   Input,
+  SimpleGrid,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -145,7 +146,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
   }
 
   return (
-    <Container maxW='xl'>
+    <>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -195,76 +196,77 @@ const UserDetail = ({ user }: UserDetailProps) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      <Stack spacing={4}>
-        <HStack
-          justifyContent={'space-between'}
-          p={6}
-          bg='white'
-          rounded={'lg'}
-        >
-          <HStack spacing={4}>
-            <Avatar
-              src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
-              size='xl'
-            />
-            <Text fontSize={'xl'}>
-              {isAuthUser ? authUser?.name : user.name}
-            </Text>
+      <Container maxW='2xl'>
+        <Stack spacing={4}>
+          <HStack
+            justifyContent={'space-between'}
+            p={6}
+            bg='white'
+            rounded={'lg'}
+          >
+            <HStack spacing={4}>
+              <Avatar
+                src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
+                size='2xl'
+              />
+              <Text fontSize={'xl'}>
+                {isAuthUser ? authUser?.name : user.name}
+              </Text>
+            </HStack>
+            {isAuthUser ? (
+              <Button
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+                onClick={onOpen}
+              >
+                プロフィール編集
+              </Button>
+            ) : (
+              <Button colorScheme='white' bg='black' rounded={'full'}>
+                フォロー
+              </Button>
+            )}
           </HStack>
-          {isAuthUser ? (
-            <Button
-              colorScheme='white'
-              bg='black'
-              rounded={'full'}
-              onClick={onOpen}
-            >
-              プロフィール編集
-            </Button>
-          ) : (
-            <Button colorScheme='white' bg='black' rounded={'full'}>
-              フォロー
-            </Button>
-          )}
-        </HStack>
 
-        <Heading as='h2' size='md'>
-          所属グループ
-        </Heading>
-        <Flex gap={4} mt={6} flexWrap={'wrap'}>
-          {user.groups?.map((g) => (
-            <Link
-              key={g.id}
-              href={`/groups/${g.id}`}
-              textDecoration='none !important'
-            >
-              <Card maxW='sm' width='200px' borderRadius='lg'>
-                <CardBody p={0}>
-                  <Image
-                    src={g.thumbnail}
-                    alt={g.name}
-                    borderTopRadius='lg'
-                    boxSize={'150px'}
-                    width='100%'
-                    objectFit='cover'
-                  />
-                  <Stack mt={2} spacing={3} p={2}>
-                    <Text
-                      fontSize='sm'
-                      fontWeight='bold'
-                      noOfLines={2}
-                      height='40px'
-                    >
-                      {g.name}
-                    </Text>
-                  </Stack>
-                </CardBody>
-              </Card>
-            </Link>
-          ))}
-        </Flex>
-      </Stack>
-    </Container>
+          <Heading as='h2' size='md' mt={2}>
+            所属グループ
+          </Heading>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
+            {user.groups?.map((g) => (
+              <Link
+                key={g.id}
+                href={`/groups/${g.id}`}
+                textDecoration='none !important'
+              >
+                <Card borderRadius='lg'>
+                  <CardBody p={0}>
+                    <Image
+                      src={g.thumbnail}
+                      alt={g.name}
+                      borderTopRadius='lg'
+                      boxSize={'150px'}
+                      width='100%'
+                      objectFit='cover'
+                    />
+                    <Stack mt={2} spacing={3} p={2}>
+                      <Text
+                        fontSize='sm'
+                        fontWeight='bold'
+                        noOfLines={2}
+                        height='40px'
+                      >
+                        {g.name}
+                      </Text>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </Link>
+            ))}
+          </SimpleGrid>
+        </Stack>
+      </Container>
+    </>
   )
 }
 

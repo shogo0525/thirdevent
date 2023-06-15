@@ -24,6 +24,7 @@ import {
   Button,
   Grid,
   GridItem,
+  Avatar,
   Text,
   Heading,
   Divider,
@@ -42,7 +43,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
-import type { Event, Ticket, TicketOwner } from '@/types'
+import type { User, Event, Ticket } from '@/types'
 import { truncateContractAddress } from '@/utils'
 import { MultiLineBody } from '@/components/MultiLineBody'
 import alchemyClient from '@/lib/alchemy'
@@ -52,14 +53,13 @@ import QRCode from 'qrcode'
 
 interface EventDetailProps {
   event: Event
-  ticketOwners: TicketOwner[]
+  ticketOwners: User[]
 }
 
 export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
   context,
 ) => {
   const { eventId } = context.query
-  const { host, 'x-forwarded-proto': proto } = context.req.headers
 
   const { data: eventData } = await supabase
     .from('events')
@@ -93,6 +93,7 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
     })),
   }
 
+  // TODO
   const { owners } = await alchemyClient.nft.getOwnersForContract(
     event.contractAddress,
     {
@@ -100,27 +101,25 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
     },
   )
 
-  let ticketOwners: TicketOwner[] = owners.map((owner) => ({
-    walletAddress: owner.ownerAddress,
-    tokenIds: owner.tokenBalances.map((tb) => parseInt(tb.tokenId, 16)),
-  }))
+  const holderAddresses = owners.map((owner) => owner.ownerAddress)
 
   const { data: users } = await supabase
     .from('users')
     .select('*')
-    .in(
-      'wallet_address',
-      ticketOwners.map((to) => to.walletAddress),
-    )
+    .in('wallet_address', holderAddresses)
 
-  ticketOwners = ticketOwners.map((to) => {
-    const user = users?.find((u) => u.wallet_address === to.walletAddress)
-    return {
-      ...to,
-      userId: user?.id ?? null,
-      nickname: user?.name || null,
-    }
+  const ticketOwners: User[] = holderAddresses.map((holderAddress) => {
+    const user = users?.find((u) => u.wallet_address === holderAddress)
+    console.log(users, user)
+
+    return (user || {
+      id: '',
+      walletAddress: holderAddress,
+      name: 'NON thirdevent User',
+    }) as User
   })
+
+  console.log('ticketOwners', ticketOwners)
 
   return {
     props: {
@@ -157,7 +156,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
 
   const tickets: Ticket[] = (ticketTypes ?? []).map(
     (ticket: Ticket, i: number) => {
-      const ticketMetadata = event.tickets.find(
+      const ticketMetadata = event.tickets?.find(
         (t) => t.ticketId === ticket.ticketId,
       )
       console.log('ticketMetadata', ticketMetadata)
@@ -180,6 +179,8 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     code?: string,
   ) => {
     try {
+      let sig = '0x'
+
       if (requireSignature) {
         if (!connectedWallet) return
         const response = await fetchWithSignature(
@@ -202,16 +203,11 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
           return
         }
 
-        const { receipt } = await mutateMint({
-          args: [ticketId, signature],
-          overrides: { value: costWei },
-        })
-
-        return
+        sig = signature
       }
 
       const { receipt } = await mutateMint({
-        args: [ticketId, '0x'],
+        args: [ticketId, sig],
         overrides: { value: costWei },
       })
     } catch (e) {
@@ -312,7 +308,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
           {tickets.length > 0 && (
             <Stack>
               {tickets.map((ticket, i: number) => {
-                const ticketMetadata = event.tickets.find(
+                const ticketMetadata = event.tickets?.find(
                   (t) => t.ticketId === ticket.ticketId,
                 )
 
@@ -337,32 +333,10 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
               onClick={onOpen}
             />
           )}
-
-          {ticketOwners.length > 0 && (
-            <Stack>
-              <Text>チケット保有者</Text>
-              {ticketOwners.map((owner, i: number) => (
-                <React.Fragment key={i}>
-                  {owner.userId ? (
-                    <Link
-                      as={NextLink}
-                      color='teal.500'
-                      href={`/users/${owner.userId}`}
-                    >
-                      {owner.nickname}
-                    </Link>
-                  ) : (
-                    <Text>{owner.walletAddress}</Text>
-                  )}
-                  <Text>保有 Token Id: {owner.tokenIds.join(',')}</Text>
-                </React.Fragment>
-              ))}
-            </Stack>
-          )}
         </Stack>
       </GridItem>
       <GridItem justifyItems='center'>
-        <Stack>
+        <Stack spacing={4}>
           <Card borderRadius='lg'>
             <CardBody p={0}>
               <Stack mt={2} spacing={3} p={3}>
@@ -409,6 +383,30 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
               </Stack>
             </CardBody>
           </Card>
+
+          <Heading fontSize={'md'}>参加者</Heading>
+          {ticketOwners?.map((owner, i: number) => (
+            <React.Fragment key={i}>
+              {owner.id ? (
+                <Link
+                  as={NextLink}
+                  key={owner.id}
+                  color='teal.500'
+                  href={`/users/${owner.id}`}
+                >
+                  <HStack>
+                    <Avatar src={owner.thumbnail} size='sm' />
+                    <Text>{owner.name}</Text>
+                  </HStack>
+                </Link>
+              ) : (
+                <HStack>
+                  <Avatar src={owner.thumbnail} size='sm' />
+                  <Text>{owner.name}</Text>
+                </HStack>
+              )}
+            </React.Fragment>
+          ))}
         </Stack>
       </GridItem>
     </Grid>
