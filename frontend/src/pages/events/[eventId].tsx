@@ -39,6 +39,7 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  HStack,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
 import type { Event, Ticket, MintRule, TicketOwner } from '@/types'
@@ -340,9 +341,22 @@ const EventDetail = ({
             </ModalContent>
           </Modal>
 
-          <Heading as='h2' size='lg'>
-            {event.title}
-          </Heading>
+          <HStack justifyContent={'space-between'}>
+            <Heading as='h2' size='lg'>
+              {event.title}
+            </Heading>
+            {isGroupMember && (
+              <Button
+                as={NextLink}
+                href={`/events/${event.id}/edit`}
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+              >
+                受付管理
+              </Button>
+            )}
+          </HStack>
 
           <Image
             src={event.thumbnail}
@@ -385,7 +399,7 @@ const EventDetail = ({
                     <Link
                       as={NextLink}
                       color='teal.500'
-                      href={`/users/${owner.walletAddress}`}
+                      href={`/users/${owner.userId}`}
                     >
                       {owner.nickname}
                     </Link>
@@ -450,13 +464,13 @@ const EventDetail = ({
 
           {isGroupMember && (
             <>
-              <Button mt={4} colorScheme='blue'>
-                <Link as={NextLink} href={`/events/${event.id}/edit`}>
-                  Edit Event
-                </Link>
-              </Button>
               <Text>参加受付用QRコード</Text>
-              <Link as={NextLink} color='teal.500' href={claimTicketUrl}>
+              <Link
+                as={NextLink}
+                color='teal.500'
+                href={claimTicketUrl}
+                textDecoration='none !important'
+              >
                 {claimTicketUrl}
               </Link>
               <Image mt={4} src={claimQRCode} alt='qr' width='200px' />

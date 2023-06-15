@@ -47,6 +47,12 @@ export type Ticket = {
   ruleType?: MintRuleType
 }
 
+export type Claim = {
+  id: string
+  eventId: string
+  claimEndDate: string
+}
+
 export type MintRuleType = 'allowlist' | 'code' | 'nft'
 
 export type MintRule = {

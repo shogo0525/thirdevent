@@ -4,92 +4,41 @@ import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
-import { ethers } from 'ethers'
 import {
-  useSDK,
   useAddress,
   useContract,
-  useContractRead,
   useContractWrite,
   useConnectedWallet,
 } from '@thirdweb-dev/react'
-import GroupAbi from '@/contracts/GroupAbi.json'
 import EventAbi from '@/contracts/EventAbi.json'
 import {
-  Container,
   Stack,
-  Flex,
-  Badge,
   Box,
   Button,
-  Grid,
-  GridItem,
   Text,
-  Heading,
-  Divider,
   Link,
-  Image,
-  Card,
-  CardBody,
-  IconButton,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
   Tooltip,
+  HStack,
 } from '@chakra-ui/react'
-import { ExternalLinkIcon, AddIcon } from '@chakra-ui/icons'
-import type { Event, Ticket, MintRule, TicketOwner } from '@/types'
-import { truncateContractAddress } from '@/utils'
-import { MultiLineBody } from '@/components/MultiLineBody'
+import type { Event, Claim } from '@/types'
 import alchemyClient from '@/lib/alchemy'
-import { TicketCard } from '@/components/TicketCard'
-import { TicketForm, FormData as TicketFormData } from '@/components/TicketForm'
-import QRCode from 'qrcode'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface ClaimTicketProps {
   event: Event
-  claimEndDate: string
-  claimId: string
+  claim: Claim
 }
 
 export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
   context,
 ) => {
-  const { eventId, claim_id } = context.query
-  const { data: eventData } = await supabase
-    .from('events')
-    .select('*, group:groups(*)')
-    .eq('id', eventId)
-    .maybeSingle()
-
-  if (!eventData) {
-    return {
-      notFound: true,
-    }
-  }
-
-  const event: Event = {
-    id: eventData.id,
-    contractAddress: eventData.contract_address,
-    title: eventData.title,
-    description: eventData.description,
-    thumbnail: eventData.thumbnail,
-    group: {
-      id: eventData.group.id,
-      name: eventData.group.name,
-      contractAddress: eventData.group.contract_address,
-    },
-  }
+  const { eventId, claimId } = context.query
 
   const { data: claimData } = await supabase
     .from('claims')
-    .select('*')
-    .eq('id', claim_id)
+    .select('*, event:events(*, group:groups(*))')
+    .eq('id', claimId)
+    .eq('events.id', eventId)
     .maybeSingle()
 
   if (!claimData) {
@@ -98,13 +47,29 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
     }
   }
 
-  const claimEndDate: string = claimData.claim_end_date
+  const event: Event = {
+    id: claimData.event.id,
+    contractAddress: claimData.event.contract_address,
+    title: claimData.event.title,
+    description: claimData.event.description,
+    thumbnail: claimData.event.thumbnail,
+    group: {
+      id: claimData.event.group.id,
+      name: claimData.event.group.name,
+      contractAddress: claimData.event.group.contract_address,
+    },
+  }
+
+  const claim: Claim = {
+    id: claimId as string,
+    eventId: event.id,
+    claimEndDate: claimData.claim_end_date as string,
+  }
 
   return {
     props: {
       event,
-      claimEndDate,
-      claimId: claim_id,
+      claim,
     },
   }
 }
@@ -134,11 +99,12 @@ const useIsClaimExpired = (claimEndDate: string) => {
   return isExpired
 }
 
-const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
+const ClaimTicket = ({ event, claim }: ClaimTicketProps) => {
+  const { authSignIn, user } = useAuth()
+
   const connectedWallet = useConnectedWallet()
-  const sdk = useSDK()
   const address = useAddress()
-  const isClaimExpired = useIsClaimExpired(claimEndDate)
+  const isClaimExpired = useIsClaimExpired(claim.claimEndDate)
 
   const [tokenIds, setTokenIds] = useState<number[]>([])
 
@@ -146,13 +112,14 @@ const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
     event.contractAddress,
     EventAbi,
   )
-  const { mutateAsync: mutateClaim, isLoading: isMinting } = useContractWrite(
+  const { mutateAsync: mutateClaim, isLoading } = useContractWrite(
     eventContract,
     'claim',
   )
 
   const claimTicket = async (tokenId: number) => {
     if (!connectedWallet) return
+
     const response = await fetchWithSignature(
       '/api/auth/getSignatureToClaim',
       connectedWallet,
@@ -162,7 +129,7 @@ const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
           contractAddress: event.contractAddress,
           eventId: event.id,
           tokenId,
-          claimId,
+          claimId: claim.id,
         }),
       },
     )
@@ -187,42 +154,67 @@ const ClaimTicket = ({ event, claimEndDate, claimId }: ClaimTicketProps) => {
   }
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserNfts = async () => {
       if (!address) return
       const { ownedNfts } = await alchemyClient.nft.getNftsForOwner(address, {
         contractAddresses: [event.contractAddress],
       })
+      console.log('ownedNfts', ownedNfts)
+
       setTokenIds(ownedNfts.map((nft) => Number(nft.tokenId)))
     }
-    fetchData()
+    fetchUserNfts()
   }, [address, event.contractAddress])
 
   return (
     <Stack gap={4}>
-      <Link as={NextLink} color='teal.500' href={`/events/${event.id}`}>
-        {event.title}
-      </Link>
+      <HStack fontSize={'xl'}>
+        <Link as={NextLink} color='teal.500' href={`/events/${event.id}`}>
+          {event.title}
+        </Link>
+        <Text>参加確定ページ</Text>
+      </HStack>
+      <Text>
+        参加確定ボタンを押すと、チケットNFTが転送不可の「参加証明SBT」になります
+      </Text>
 
-      {tokenIds.map((tokenId) => (
-        <Box key={tokenId}>
-          <Tooltip
-            label={isClaimExpired ? 'Claim period has ended.' : ''}
-            aria-label='A tooltip explaining why the button is disabled'
-          >
-            <span>
-              <Button
-                onClick={() => claimTicket(tokenId)}
-                isDisabled={isClaimExpired}
+      {!user && (
+        <Button
+          colorScheme='white'
+          bg='black'
+          rounded={'full'}
+          onClick={authSignIn}
+        >
+          ログイン
+        </Button>
+      )}
+
+      {user && (
+        <>
+          {tokenIds.map((tokenId) => (
+            <Box key={tokenId}>
+              <Tooltip
+                label={isClaimExpired ? 'Claim period has ended.' : ''}
+                aria-label='A tooltip explaining why the button is disabled'
               >
-                Claim Ticket {tokenId}
-              </Button>
-            </span>
-          </Tooltip>
-          <Text fontSize='sm' mt={2}>
-            {`Claim End Date: ${new Date(claimEndDate).toLocaleDateString()}`}
-          </Text>
-        </Box>
-      ))}
+                <span>
+                  <Button
+                    onClick={() => claimTicket(tokenId)}
+                    isDisabled={isClaimExpired}
+                  >
+                    Claim Ticket (ID: {tokenId})
+                  </Button>
+                </span>
+              </Tooltip>
+              <Text fontSize='sm' mt={2}>
+                {`Claim End Date: ${new Date(
+                  claim.claimEndDate,
+                ).toLocaleDateString()}`}
+              </Text>
+            </Box>
+          ))}
+        </>
+      )}
     </Stack>
   )
 }
