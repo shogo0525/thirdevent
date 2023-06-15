@@ -88,6 +88,7 @@ contract Event is ERC721, Ownable {
 
   function claim(uint256 _tokenId, bytes calldata _signature) public {
     require(_exists(_tokenId), 'Nonexistent token');
+    require(ownerOf(_tokenId) == msg.sender, 'Not the token owner');
     bytes32 hash = keccak256(abi.encodePacked(address(this), msg.sender, _tokenId));
     require(hash.toEthSignedMessageHash().recover(_signature) == signer, 'Invalid signature');
     isClaimed[_tokenId] = true;
