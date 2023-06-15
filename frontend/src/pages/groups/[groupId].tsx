@@ -1,10 +1,8 @@
 import { GetServerSideProps } from 'next'
-import React, { useState, useEffect, ChangeEvent } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
-import { v4 as uuidv4 } from 'uuid'
-import { ethers } from 'ethers'
 import {
   useAddress,
   useContract,
@@ -30,11 +28,17 @@ import {
   CardBody,
   Avatar,
   HStack,
+  Popover,
+  PopoverTrigger,
+  PopoverHeader,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverBody,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { truncateContractAddress } from '@/utils'
-import type { Group } from '@/types'
 import { COOKIE } from '@/constants'
+import type { Group, User } from '@/types'
 
 interface GroupDetailProps {
   userId: string
@@ -103,6 +107,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
 const GroupDetail = ({ group }: GroupDetailProps) => {
   const router = useRouter()
   const address = useAddress()
+
   const { contract: groupContract } = useContract(
     group.contractAddress,
     GroupAbi,
@@ -115,22 +120,21 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
   ])
   const isGroupMember = Number(groupNftCount) > 0
 
-  const [newMemberAddress, setNewMemberAddress] = useState('')
-  const handleMemberAddressChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setNewMemberAddress(event.target.value)
-  }
+  const [newMember, setNewMember] = useState<User | null>(null)
+  const [searchResults, setSearchResults] = useState<User[]>([])
 
   const { mutateAsync: mutateAddMember, isLoading: isAddingMember } =
     useContractWrite(groupContract, 'addMember')
   const addMember = async () => {
+    if (!newMember) return
     try {
       const { receipt } = await mutateAddMember({
-        args: [newMemberAddress],
+        args: [newMember.walletAddress],
       })
       console.log('receipt', receipt)
       const { error } = await supabase
-        .from('group_member')
-        .insert({ group_id: group.id, member_address: newMemberAddress })
+        .from('members')
+        .insert({ group_id: group.id, user_id: newMember.id })
 
       if (error) {
         console.error('Error inserting data:', error)
@@ -159,7 +163,22 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
     })
   }
 
-  console.log('groupData', groupData)
+  const searchUser = async () => {
+    const currentMemberIds = (group.members ?? []).map((user) => user.id)
+
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .not('id', 'in', `(${currentMemberIds.join(',')})`)
+
+    const users: User[] = (data ?? []).map((d) => ({
+      id: d.id,
+      walletAddress: d.wallet_address,
+      name: d.name,
+      thumbnail: d.thumbnail,
+    }))
+    setSearchResults(users)
+  }
 
   return (
     <Grid templateColumns={{ base: '100%', md: '65% 35%' }} gap={4}>
@@ -267,17 +286,63 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
                 イベントを作成
               </Button>
 
-              <Input
-                placeholder='Enter Member Address'
-                value={newMemberAddress}
-                onChange={handleMemberAddressChange}
-              />
+              <Popover>
+                {({ onClose }) => (
+                  <>
+                    <PopoverTrigger>
+                      <Input
+                        placeholder='メンバー検索'
+                        value={newMember?.walletAddress}
+                        // onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => searchUser()}
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <PopoverHeader>ユーザーリスト</PopoverHeader>
+                      <PopoverCloseButton />
+                      <PopoverBody>
+                        {searchResults.length > 0 ? (
+                          <Stack>
+                            {searchResults.map((user, i) => (
+                              <Stack key={user.id}>
+                                <HStack justifyContent={'space-between'}>
+                                  <HStack>
+                                    <Avatar src={user.thumbnail} size='sm' />
+                                    <Text fontSize={'lg'}>{user.name}</Text>
+                                  </HStack>
+                                  <Button
+                                    colorScheme='white'
+                                    bg='black'
+                                    rounded={'full'}
+                                    onClick={() => {
+                                      setNewMember(user)
+                                      onClose()
+                                    }}
+                                  >
+                                    選択
+                                  </Button>
+                                </HStack>
+                                <Text fontSize={'sm'}>
+                                  ウォレットアドレス: {user.walletAddress}
+                                </Text>
+                                {i !== searchResults.length - 1 && <Divider />}
+                              </Stack>
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Text>検索結果がありません</Text>
+                        )}
+                      </PopoverBody>
+                    </PopoverContent>
+                  </>
+                )}
+              </Popover>
               <Button
                 isLoading={isAddingMember}
                 onClick={addMember}
-                isDisabled={!newMemberAddress}
+                isDisabled={!newMember}
               >
-                メンバーーを追加
+                メンバーを追加
               </Button>
             </>
           )}
