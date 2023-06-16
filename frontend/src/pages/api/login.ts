@@ -52,7 +52,7 @@ export const handler = async (
       }
 
       // const JWT_EXPIRY_IN_SECONDS = 1 * 10 // 1 minutes
-      const JWT_EXPIRY_IN_SECONDS = 60 * 60 // 60 minutes
+      const JWT_EXPIRY_IN_SECONDS = 24 * 60 * 60 // 24 hours
 
       const accessToken = jwt.sign(
         {
