@@ -9,13 +9,20 @@ import React, {
 import Cookies from 'js-cookie'
 import supabase from '@/lib/supabase'
 import type { User } from '@/types'
-import { useAddress, useDisconnect, useMetamask } from '@thirdweb-dev/react'
+import {
+  useAddress,
+  useDisconnect,
+  useMetamask,
+  useConnectedWallet,
+} from '@thirdweb-dev/react'
+import { UserWallet } from '@thirdweb-dev/sdk'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { COOKIE } from '@/constants'
 import { isTokenExpired } from '@/utils'
 
 interface AuthContextProps {
   user: User | null
+  connectedWallet: UserWallet | undefined
   authSignIn: () => Promise<void>
   authSignOut: () => void
   fetchUser: () => Promise<void>
@@ -27,6 +34,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const address = useAddress()
   const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
+  const connectedWallet = useConnectedWallet()
 
   const [userId, setUserId] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -128,6 +136,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        connectedWallet,
         authSignIn,
         authSignOut,
         fetchUser,

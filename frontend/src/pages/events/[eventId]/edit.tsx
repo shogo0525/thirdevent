@@ -95,11 +95,11 @@ const EditEvent = ({
       }
 
       const { protocol, host } = window.location
-      const url = `${protocol}://${host}/claim-ticket/${eventId}?claimId=${claimId}`
+      const url = `${protocol}//${host}/claim-ticket/${eventId}?claimId=${claimId}`
       const qrCode = await QRCode.toDataURL(url)
 
-      setClaimUrlList((prevTickets) => [
-        ...prevTickets,
+      setClaimUrlList((prev) => [
+        ...prev,
         { url, endDate: data.claim_end_date, qrCode },
       ])
     } catch (error) {
@@ -133,6 +133,7 @@ const EditEvent = ({
               as={NextLink}
               color='teal.500'
               href={claimUrl.url}
+              target='_blank'
               textDecoration='none !important'
             >
               リンク

@@ -35,12 +35,15 @@ export type FormData = z.infer<typeof schema>
 
 type TicketFormProps = {
   event: Event
-  onSubmitHandler: (newTicketId: string, data: FormData) => Promise<void>
+  onSubmitHandler: (
+    newTicketId: string,
+    data: FormData,
+    thumbnail: string,
+  ) => Promise<void>
 }
 
 export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
   const [ticketImage, setTicketImage] = useState<File | null>(null)
-  const [isRequireSignature, setIsRequireSignature] = useState(false)
 
   const {
     register,
@@ -78,7 +81,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
             rule_value: data.ruleValue,
           })
 
-          await onSubmitHandler(ticketId, data)
+          await onSubmitHandler(ticketId, data, ticketImageUrl)
         }
       } else {
         alert('Please input image file')
@@ -253,10 +256,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
               <Switch
                 colorScheme='blue'
                 isChecked={field.value}
-                onChange={(e) => {
-                  field.onChange(e.target.checked)
-                  setIsRequireSignature(e.target.checked)
-                }}
+                onChange={(e) => field.onChange(e.target.checked)}
               />
             )}
           />
@@ -311,7 +311,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
         )}
       </FormControl>
 
-      <Button colorScheme='blue' type='submit'>
+      <Button colorScheme='blue' type='submit' isLoading={isSubmitting}>
         Submit
       </Button>
     </Stack>

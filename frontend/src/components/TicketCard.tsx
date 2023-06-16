@@ -15,19 +15,16 @@ import { ParticipantTypes } from '@/constants'
 
 type TicketCardProps = {
   ticket: Ticket
-  thumbnail?: string
-  onClick: (
+  onPurchase: (
     ticketId: string,
-    costWei: number,
+    costWei: ethers.BigNumber,
     requireSignature: boolean,
     code?: string,
   ) => void
 }
 
-export const TicketCard = ({ ticket, thumbnail, onClick }: TicketCardProps) => {
-  const fee = Number(ticket.fee)
-  const price = Number(ethers.utils.formatEther(fee))
-  const formattedPrice = price > 0 ? `${price} MATIC` : '無料'
+export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
+  const formattedPrice = ticket.fee > 0 ? `${ticket.fee} MATIC` : '無料'
 
   const requireCode = ticket.ruleType && ticket.ruleType === 'code'
   const [code, setCode] = useState('')
@@ -36,7 +33,7 @@ export const TicketCard = ({ ticket, thumbnail, onClick }: TicketCardProps) => {
     <HStack>
       <Image
         alt={ticket.name}
-        src={thumbnail}
+        src={ticket.thumbnail}
         boxSize={40}
         maxH={20}
         objectFit={'cover'}
@@ -66,7 +63,12 @@ export const TicketCard = ({ ticket, thumbnail, onClick }: TicketCardProps) => {
               size='sm'
               color='white'
               onClick={() =>
-                onClick(ticket.ticketId, fee, ticket.requireSignature, code)
+                onPurchase(
+                  ticket.ticketId,
+                  ethers.utils.parseEther(ticket.fee.toString()),
+                  ticket.requireSignature,
+                  code,
+                )
               }
               isDisabled={requireCode && !code}
             >

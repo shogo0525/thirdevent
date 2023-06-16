@@ -29,12 +29,8 @@ export type Event = {
   title: string
   description?: string
   thumbnail?: string
-  group: {
-    id: string
-    name: string
-    contractAddress: string
-  }
-  tickets?: TicketMetadata[]
+  group: Group
+  tickets?: Ticket[]
 }
 
 export type TicketRuleType = 'allowlist' | 'code' | 'nft'
@@ -42,18 +38,12 @@ export type TicketRuleType = 'allowlist' | 'code' | 'nft'
 export type Ticket = {
   ticketId: string
   name: string
-  fee: BigNumber
+  fee: number
   maxParticipants: number
   currentParticipants: number
   participantType: ParticipantType
-  metadataURI: string
   requireSignature: boolean
-  ruleType?: TicketRuleType
-}
-export type TicketMetadata = {
-  ticketId: string
-  name: string
-  thumbnail: string
+  thumbnail?: string
   ruleType?: TicketRuleType
 }
 

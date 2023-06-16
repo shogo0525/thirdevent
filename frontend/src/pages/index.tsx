@@ -17,6 +17,8 @@ import {
   CardFooter,
   Image,
   SimpleGrid,
+  Avatar,
+  HStack,
 } from '@chakra-ui/react'
 
 interface HomeProps {
@@ -34,7 +36,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     .from('groups')
     .select('*')
     .neq('thumbnail', null)
-  // console.log(data)
+  console.log(eventData)
 
   const events = (eventData ?? []).map((d) => {
     const event: Event = {
@@ -46,6 +48,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
         id: d.group.id,
         name: d.group.name,
         contractAddress: d.group.contract_address,
+        thumbnail: d.group.thumbnail,
       },
     }
     return event
@@ -92,7 +95,7 @@ const Home = ({ events, groups }: HomeProps) => {
                     width='100%'
                     objectFit='cover'
                   />
-                  <Stack mt={2} spacing={3} p={2}>
+                  <Stack mt={2} p={2}>
                     <Text
                       fontSize='sm'
                       fontWeight='bold'
@@ -101,9 +104,12 @@ const Home = ({ events, groups }: HomeProps) => {
                     >
                       {event.title}
                     </Text>
-
-                    <Text fontSize='sm' noOfLines={2} height='40px'>
-                      主催：{event.group.name}
+                    <HStack>
+                      <Avatar src={event.group?.thumbnail} size='sm' />
+                      <Text fontSize='sm'>主催：{event.group.name}</Text>
+                    </HStack>
+                    <Text fontSize='sm' color='teal.500'>
+                      #web3 #crypto #京都
                     </Text>
                   </Stack>
                 </CardBody>

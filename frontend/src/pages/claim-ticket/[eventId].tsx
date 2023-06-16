@@ -4,12 +4,7 @@ import { useRouter } from 'next/router'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
-import {
-  useAddress,
-  useContract,
-  useContractWrite,
-  useConnectedWallet,
-} from '@thirdweb-dev/react'
+import { useAddress, useContract, useContractWrite } from '@thirdweb-dev/react'
 import EventAbi from '@/contracts/EventAbi.json'
 import {
   Stack,
@@ -100,9 +95,7 @@ const useIsClaimExpired = (claimEndDate: string) => {
 }
 
 const ClaimTicket = ({ event, claim }: ClaimTicketProps) => {
-  const { authSignIn, user } = useAuth()
-
-  const connectedWallet = useConnectedWallet()
+  const { authSignIn, user, connectedWallet } = useAuth()
   const address = useAddress()
   const isClaimExpired = useIsClaimExpired(claim.claimEndDate)
 
