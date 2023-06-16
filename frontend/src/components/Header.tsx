@@ -22,13 +22,18 @@ import {
   Avatar,
 } from '@chakra-ui/react'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useAddress, useMetamask } from '@thirdweb-dev/react'
 
 const Header = () => {
   const router = useRouter()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { authSignIn, authSignOut, user } = useAuth()
+  const {
+    authSignIn,
+    authSignOut,
+    user,
+    isNetworkMismatched,
+    switchActiveChain,
+  } = useAuth()
 
   const handleSignOut = () => {
     authSignOut()
@@ -124,7 +129,7 @@ const Header = () => {
           </Text>
         </Link>
         <Flex justifyContent='space-between' alignItems='center' gap={4}>
-          {user && (
+          {!isNetworkMismatched && user && (
             <HStack spacing={4}>
               <IconButton
                 variant='ghost'
@@ -138,6 +143,17 @@ const Header = () => {
                 <Avatar src={user?.thumbnail} size='md' />
               </Link>
             </HStack>
+          )}
+
+          {isNetworkMismatched && (
+            <Button
+              colorScheme='white'
+              bg='black'
+              rounded={'full'}
+              onClick={switchActiveChain}
+            >
+              ネットワークを切り替える
+            </Button>
           )}
 
           {!user && (

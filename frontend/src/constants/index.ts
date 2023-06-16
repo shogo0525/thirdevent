@@ -1,3 +1,7 @@
+import { Mumbai } from '@thirdweb-dev/chains'
+
+export const ACTIVE_CHAIN = Mumbai
+
 export const COOKIE = {
   TOKEN_EXPIRATION: 'thirdevent-token_expiration',
   USER_ID: 'thirdevent-user_id',

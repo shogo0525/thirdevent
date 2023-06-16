@@ -14,18 +14,23 @@ import {
   useDisconnect,
   useMetamask,
   useConnectedWallet,
+  useNetworkMismatch,
+  useSwitchChain,
 } from '@thirdweb-dev/react'
 import { UserWallet } from '@thirdweb-dev/sdk'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
 import { COOKIE } from '@/constants'
 import { isTokenExpired } from '@/utils'
+import { ACTIVE_CHAIN } from '@/constants'
 
 interface AuthContextProps {
   user: User | null
   connectedWallet: UserWallet | undefined
+  isNetworkMismatched: boolean
   authSignIn: () => Promise<void>
   authSignOut: () => void
   fetchUser: () => Promise<void>
+  switchActiveChain: () => void
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
@@ -35,6 +40,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
   const connectedWallet = useConnectedWallet()
+
+  const isNetworkMismatched = useNetworkMismatch()
+  const switchChain = useSwitchChain()
 
   const [userId, setUserId] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -55,12 +63,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           'Content-Type': 'application/json',
         },
       })
-      console.log(response)
       if (!response.ok) {
         disconnect()
       }
       const data = await response.json()
-      console.log('data', data, address)
       revalidateToken()
     } catch (e) {
       console.log('e', e)
@@ -94,7 +100,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select('*, groups(*)')
       .eq('id', userId)
       .single()
-    console.log('fetUser', userData)
 
     if (!userData) return
     const user: User = {
@@ -102,13 +107,12 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       walletAddress: userData.wallet_address,
       name: userData.name,
       thumbnail: userData.thumbnail,
-      groups:
-        userData.groups?.map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          contractAddress: d.contract_address,
-          thumbnail: d.thumbnail,
-        })) ?? [],
+      groups: (userData.groups ?? []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        contractAddress: d.contract_address,
+        thumbnail: d.thumbnail,
+      })),
     }
     setUser(user)
   }, [userId])
@@ -122,7 +126,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkTokenExpiration = () => {
       const tokenIsValid = revalidateToken()
-      console.log('useEffect, checkTokenExpiration', tokenIsValid)
       if (!tokenIsValid) authSignOut()
     }
     const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000) // every 30 minutes
@@ -132,14 +135,20 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(intervalId)
   }, [revalidateToken, authSignOut])
 
+  const switchActiveChain = () => {
+    switchChain(ACTIVE_CHAIN.chainId)
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
         connectedWallet,
+        isNetworkMismatched,
         authSignIn,
         authSignOut,
         fetchUser,
+        switchActiveChain,
       }}
     >
       {children}
