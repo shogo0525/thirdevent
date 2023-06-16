@@ -156,7 +156,7 @@ const Header = () => {
             </Button>
           )}
 
-          {!user && (
+          {!user && !router.pathname.startsWith('/claim-ticket') && (
             <Button
               colorScheme='white'
               bg='black'

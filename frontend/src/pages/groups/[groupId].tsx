@@ -42,7 +42,6 @@ import { COOKIE } from '@/constants'
 import type { Group, User } from '@/types'
 
 interface GroupDetailProps {
-  userId: string
   group: Group
 }
 
@@ -50,8 +49,6 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
   context,
 ) => {
   const { groupId } = context.query
-  const userId = context.req.cookies[COOKIE.USER_ID] ?? ''
-  console.log('userId', userId)
 
   const { data: groupData } = await supabase
     .from('groups')
@@ -100,7 +97,6 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
 
   return {
     props: {
-      userId,
       group,
     },
   }

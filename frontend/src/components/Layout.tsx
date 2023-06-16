@@ -7,7 +7,7 @@ const Layout = ({ children }: { children: ReactElement }) => {
   return (
     <>
       <Header />
-      <Container as='main' pt={4} py={10} maxW='container.lg'>
+      <Container as='main' pt={{ base: 2, lg: 4 }} pb={10} maxW='container.lg'>
         {children}
       </Container>
     </>

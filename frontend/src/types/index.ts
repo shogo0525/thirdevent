@@ -32,6 +32,12 @@ export type Event = {
   group: Group
   thumbnail?: string
   tickets?: Ticket[]
+  participants?: Participant[]
+}
+
+export type Participant = {
+  user_id: string
+  ticket: Ticket
 }
 
 export type TicketRuleType = 'allowlist' | 'code' | 'nft'
@@ -44,6 +50,12 @@ export type Ticket = {
   currentParticipants: number
   participantType: ParticipantType
   requireSignature: boolean
+  thumbnail?: string
+  ruleType?: TicketRuleType
+}
+export type TicketMetadata = {
+  ticketId: string
+  name: string
   thumbnail?: string
   ruleType?: TicketRuleType
 }

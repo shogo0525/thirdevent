@@ -212,7 +212,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
             <HStack spacing={4}>
               <Avatar
                 src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
-                size='2xl'
+                size={{ base: 'lg', sm: '2xl' }}
               />
               <Text fontSize={'xl'}>
                 {isAuthUser ? authUser?.name : user.name}

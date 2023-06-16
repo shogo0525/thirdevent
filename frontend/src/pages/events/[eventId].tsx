@@ -80,7 +80,7 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
   )
   const ticketData = await eventContract.call('getAllTicketTypes')
 
-  console.log(ticketData)
+  // console.log(ticketData)
 
   const event: Event = {
     id: eventData.id,
@@ -116,14 +116,8 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
   console.log(event)
 
   // TODO
-  const { owners } = await alchemyClient.nft.getOwnersForContract(
-    event.contractAddress,
-    {
-      withTokenBalances: true,
-    },
-  )
-
-  const holderAddresses = owners.map((owner) => owner.ownerAddress)
+  const { owners: holderAddresses } =
+    await alchemyClient.nft.getOwnersForContract(event.contractAddress)
 
   const { data: users } = await supabase
     .from('users')
