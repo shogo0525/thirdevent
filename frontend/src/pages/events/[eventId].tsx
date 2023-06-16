@@ -386,12 +386,12 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
               {isGroupMember && (
                 <Button
                   as={NextLink}
-                  href={`/events/${event.id}/edit`}
+                  href={`/events/${event.id}/admin`}
                   colorScheme='white'
                   bg='black'
                   rounded={'full'}
                 >
-                  受付管理
+                  イベント管理
                 </Button>
               )}
             </HStack>

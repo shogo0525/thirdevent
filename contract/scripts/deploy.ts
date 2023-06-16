@@ -83,36 +83,50 @@ async function main() {
   const event = Event.attach(eventAddress)
   saveFrontendFiles('Event', event.address)
 
-  const ticketId = uuidv4()
-  const ticketName = '無料チケット'
+  const ticketId1 = uuidv4()
+  const ticketName1 = '無料チケット'
+
+  const ticketId2 = uuidv4()
+  const ticketName2 = '有料チケット'
+
   await group.addTicketType(
     eventAddress,
-    ticketId,
-    ticketName,
+    ticketId1,
+    ticketName1,
     ethers.utils.parseEther('0'),
     10,
     0,
     'https://example.com/ticket-metadata',
     false,
   )
-  // await group.addTicketType(
-  //   eventAddress,
-  //   '署名チケット',
-  //   ethers.utils.parseEther('0'),
-  //   20,
-  //   2,
-  //   'https://example.com/ticket-metadata',
-  //   true,
-  // )
+  await group.addTicketType(
+    eventAddress,
+    ticketId2,
+    ticketName2,
+    ethers.utils.parseEther('0.001'),
+    10,
+    0,
+    'https://example.com/ticket-metadata',
+    false,
+  )
   console.log('Added TicketType')
 
-  const { error: error4 } = await supabase.from('tickets').insert({
-    id: ticketId,
-    event_id: eventId,
-    name: ticketName,
-    thumbnail:
-      'https://images.unsplash.com/photo-1635070636690-d887c1a77e7b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80',
-  })
+  const { error: error4 } = await supabase.from('tickets').insert([
+    {
+      id: ticketId1,
+      event_id: eventId,
+      name: ticketName1,
+      thumbnail:
+        'https://images.unsplash.com/photo-1635070636690-d887c1a77e7b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80',
+    },
+    {
+      id: ticketId2,
+      event_id: eventId,
+      name: ticketName2,
+      thumbnail:
+        'https://images.unsplash.com/photo-1563802560775-445d06537a8d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+    },
+  ])
 
   await sleep(15)
 

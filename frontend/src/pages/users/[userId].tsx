@@ -51,8 +51,6 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
     .eq('id', userId)
     .maybeSingle()
 
-  console.log(userData.participants)
-
   if (!userData) {
     return {
       notFound: true,

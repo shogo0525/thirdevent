@@ -37,6 +37,8 @@ contract Event is ERC721, Ownable {
   address payable private platformAddress = payable(0xC274Db247360D9aA845E7F45775cB089B4622Ffe);
   address private signer = 0xC274Db247360D9aA845E7F45775cB089B4622Ffe;
 
+  address public splitContractAddress;
+
   constructor(
     string memory _eventId
   ) ERC721('thirdevent EventTicket', 'TEET') {
@@ -74,7 +76,15 @@ contract Event is ERC721, Ownable {
     _mint(_ticketId);
 
     if (ticketTypes[ticketTypeIndexByTicketId[_ticketId] - 1].fee > 0) {
-      sendPlatformFee(msg.value);
+      // Calculate 1% of the amount
+      uint256 platformFee = msg.value / 100;
+      platformAddress.sendValue(platformFee);
+
+      if (splitContractAddress != address(0)) {
+        payable(splitContractAddress).sendValue(msg.value - platformFee);
+      } else {
+        payable(owner()).sendValue(msg.value - platformFee);
+      }
     }
   }
 
@@ -125,14 +135,8 @@ contract Event is ERC721, Ownable {
     return ticketTypes;
   }
 
-  function withdrawFunds(address _to) external onlyOwner {
-    require(address(this).balance > 0, 'No funds');
-    payable(_to).sendValue(address(this).balance);
-  }
-
-  function sendPlatformFee(uint256 _amount) private {
-    // Calculate 1% of the amount
-    platformAddress.sendValue(_amount / 100);
+  function setSplitContractAddress(address _addr) external onlyOwner {
+    splitContractAddress = _addr;
   }
 
   function _beforeTokenTransfer(

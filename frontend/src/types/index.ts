@@ -29,8 +29,8 @@ export type Event = {
   title: string
   contractAddress: string
   description?: string
-  thumbnail?: string
   group: Group
+  thumbnail?: string
   tickets?: Ticket[]
 }
 

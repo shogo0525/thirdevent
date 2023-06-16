@@ -10,7 +10,7 @@ import './Enums.sol';
 
 interface IEvent {
   function addTicketType(string memory _ticketId, string memory _name, uint256 _fee, uint256 _maxParticipants, ParticipantType _participantType, string memory _metadataURI, bool _requireSignature) external;
-  function withdrawFunds(address _to) external;
+  function setSplitContractAddress(address _addr) external;
 }
 
 contract Group is ERC721, Ownable {
@@ -92,8 +92,8 @@ contract Group is ERC721, Ownable {
     IEvent(_eventAddress).addTicketType(_ticketId, _name, _fee, _maxParticipants, _participantType, _metadataURI, _requireSignature);
   }
 
-  function withdrawFromEvent(address _eventAddress) public onlyAdminOrMember {
-    IEvent(_eventAddress).withdrawFunds(address(this));
+  function setSplitContractAddress(address _eventAddress, address _addr) public onlyAdminOrMember {
+    IEvent(_eventAddress).setSplitContractAddress(_addr);
   }
 
   receive() external payable {}

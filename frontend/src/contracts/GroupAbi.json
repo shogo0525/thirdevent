@@ -474,6 +474,24 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_eventAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
+    "name": "setSplitContractAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -554,19 +572,6 @@
       }
     ],
     "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_eventAddress",
-        "type": "address"
-      }
-    ],
-    "name": "withdrawFromEvent",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
