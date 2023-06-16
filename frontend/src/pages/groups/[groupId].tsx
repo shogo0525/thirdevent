@@ -28,6 +28,7 @@ import {
   CardBody,
   Avatar,
   HStack,
+  SimpleGrid,
   Popover,
   PopoverTrigger,
   PopoverHeader,
@@ -92,6 +93,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
       id: e.id,
       groupId,
       title: e.title,
+      thumbnail: e.thumbnail,
     })),
   }
   console.log(group)
@@ -198,18 +200,42 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
           <Heading as='h3' size='md'>
             {group.subtitle}
           </Heading>
-
-          <Text>イベント一覧</Text>
-          {group.events?.map((e) => (
-            <Link
-              as={NextLink}
-              key={e.id}
-              color='teal.500'
-              href={`/events/${e.id}`}
-            >
-              {e.title}
-            </Link>
-          ))}
+          <Heading size='md'>イベント一覧</Heading>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
+            {group.events?.map((event) => (
+              <Link
+                key={event.id}
+                href={`/events/${event.id}`}
+                textDecoration='none !important'
+              >
+                <Card borderRadius='lg'>
+                  <CardBody p={0}>
+                    <Image
+                      src={event.thumbnail}
+                      alt={event.title}
+                      borderTopRadius='lg'
+                      boxSize={'150px'}
+                      width='100%'
+                      objectFit='cover'
+                    />
+                    <Stack mt={2} p={2}>
+                      <Text
+                        fontSize='sm'
+                        fontWeight='bold'
+                        noOfLines={2}
+                        height='40px'
+                      >
+                        {event.title}
+                      </Text>
+                      <Text fontSize='sm' color='teal.500'>
+                        #web3 #crypto #京都
+                      </Text>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </Link>
+            ))}
+          </SimpleGrid>
         </Stack>
       </GridItem>
       <GridItem>

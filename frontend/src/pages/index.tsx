@@ -82,7 +82,7 @@ const Home = ({ events, groups }: HomeProps) => {
           {events.map((event) => (
             <Link
               key={event.id}
-              href={`events/${event.id}`}
+              href={`/events/${event.id}`}
               textDecoration='none !important'
             >
               <Card borderRadius='lg'>
@@ -125,7 +125,7 @@ const Home = ({ events, groups }: HomeProps) => {
           {groups.map((group) => (
             <Link
               key={group.id}
-              href={`groups/${group.id}`}
+              href={`/groups/${group.id}`}
               textDecoration='none !important'
             >
               <Card borderRadius='lg'>
