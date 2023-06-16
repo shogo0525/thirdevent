@@ -47,9 +47,11 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
 
   const { data: userData } = await supabase
     .from('users')
-    .select(`*, groups(*)`)
+    .select(`*, groups(*), participants(*, event:events(*))`)
     .eq('id', userId)
     .maybeSingle()
+
+  console.log(userData.participants)
 
   if (!userData) {
     return {
@@ -62,13 +64,18 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
     walletAddress: userData.wallet_address,
     name: userData.name,
     thumbnail: userData.thumbnail,
-    groups:
-      userData.groups?.map((d: any) => ({
-        id: d.id,
-        name: d.name,
-        contractAddress: d.contract_address,
-        thumbnail: d.thumbnail,
-      })) ?? [],
+    events: (userData.participants ?? []).map((d: any) => ({
+      id: d.event.id,
+      title: d.event.title,
+      contractAddress: d.event.contract_address,
+      thumbnail: d.event.thumbnail,
+    })),
+    groups: (userData.groups ?? []).map((d: any) => ({
+      id: d.id,
+      name: d.name,
+      contractAddress: d.contract_address,
+      thumbnail: d.thumbnail,
+    })),
   }
 
   return {
@@ -228,6 +235,42 @@ const UserDetail = ({ user }: UserDetailProps) => {
               </Button>
             )}
           </HStack>
+
+          <Heading as='h2' size='md' mt={2}>
+            参加イベント
+          </Heading>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
+            {user.events?.map((e) => (
+              <Link
+                key={e.id}
+                href={`/events/${e.id}`}
+                textDecoration='none !important'
+              >
+                <Card borderRadius='lg'>
+                  <CardBody p={0}>
+                    <Image
+                      src={e.thumbnail}
+                      alt={e.title}
+                      borderTopRadius='lg'
+                      boxSize={'150px'}
+                      width='100%'
+                      objectFit='cover'
+                    />
+                    <Stack mt={2} spacing={3} p={2}>
+                      <Text
+                        fontSize='sm'
+                        fontWeight='bold'
+                        noOfLines={2}
+                        height='40px'
+                      >
+                        {e.title}
+                      </Text>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </Link>
+            ))}
+          </SimpleGrid>
 
           <Heading as='h2' size='md' mt={2}>
             所属グループ

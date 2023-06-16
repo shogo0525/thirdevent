@@ -224,6 +224,12 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
         transactionHash,
       })
       onOpen()
+
+      const { error } = await supabase.from('participants').insert({
+        user_id: user?.id,
+        event_id: event.id,
+        ticket_id: ticketId,
+      })
     } catch (e) {
       console.log('e', e)
     }

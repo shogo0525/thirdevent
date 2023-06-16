@@ -9,13 +9,14 @@ export type User = {
   walletAddress: string
   name: string
   thumbnail?: string
+  events?: Event[]
   groups?: Group[]
 }
 
 export type Group = {
   id: string
-  contractAddress: string
   name: string
+  contractAddress: string
   balance?: string
   subtitle?: string
   thumbnail?: string
@@ -25,8 +26,8 @@ export type Group = {
 
 export type Event = {
   id: string
-  contractAddress: string
   title: string
+  contractAddress: string
   description?: string
   thumbnail?: string
   group: Group
