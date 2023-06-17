@@ -1,26 +1,25 @@
 import { GetServerSideProps } from 'next'
-import React, { useState, useRef, ChangeEvent } from 'react'
-import { useRouter } from 'next/router'
-import NextLink from 'next/link'
+import React, { useRef } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { useForm, SubmitHandler } from 'react-hook-form'
 import supabase from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthProvider'
 
 import {
+  FormControl,
+  FormLabel,
   Container,
   Stack,
   Button,
   Text,
   Heading,
-  Divider,
   Link,
   Image,
   Icon,
   HStack,
-  Flex,
   Card,
-  CardHeader,
   CardBody,
-  CardFooter,
   Avatar,
   Input,
   SimpleGrid,
@@ -28,13 +27,12 @@ import {
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react'
-import type { Group, User } from '@/types'
+import type { User } from '@/types'
 
 interface UserDetailProps {
   user: User
@@ -62,11 +60,11 @@ export const getServerSideProps: GetServerSideProps<UserDetailProps> = async (
     walletAddress: userData.wallet_address,
     name: userData.name,
     thumbnail: userData.thumbnail,
-    events: (userData.participants ?? []).map((d: any) => ({
-      id: d.event.id,
-      title: d.event.title,
-      contractAddress: d.event.contract_address,
-      thumbnail: d.event.thumbnail,
+    events: (userData.participants ?? []).map((p: any) => ({
+      id: p.event.id,
+      title: p.event.title,
+      contractAddress: p.event.contract_address,
+      thumbnail: p.event.thumbnail,
     })),
     groups: (userData.groups ?? []).map((d: any) => ({
       id: d.id,
@@ -90,22 +88,34 @@ const UserDetail = ({ user }: UserDetailProps) => {
   const isAuthUser = user.id === authUser?.id
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const inputFileRef = useRef<HTMLInputElement>(null)
-  const [userImage, setUserImage] = useState<File | null>(null)
+  const schema = z.object({
+    name: z.string().nonempty({ message: 'Required' }),
+    image: z
+      .custom<FileList>()
+      .refine((file) => file.length !== 0, { message: 'Required' }),
+    // .transform((file) => file[0]),
+  })
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    file && setUserImage(file)
-  }
+  type FormData = z.infer<typeof schema>
 
-  const saveImage = async () => {
+  const {
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  })
+  const currentImage = watch('image')
+
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
-      if (!authUser || !userImage) return
+      if (!authUser) return
 
       const imageFilePath = `users/${authUser.id}/thumbnail.png`
       const { error: imageUploadError } = await supabase.storage
         .from('images')
-        .upload(imageFilePath, userImage, {
+        .upload(imageFilePath, data.image[0], {
           upsert: true,
         })
 
@@ -130,6 +140,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
       const { error } = await supabase
         .from('users')
         .update({
+          name: data.name,
           thumbnail: imagePublicUrl,
         })
         .eq('id', authUser.id)
@@ -138,8 +149,12 @@ const UserDetail = ({ user }: UserDetailProps) => {
         console.error('Error inserting data:', error)
         return
       }
+
+      onClose()
+      fetchUser()
+
       toast({
-        title: 'プロフィール画像を変更しました',
+        title: 'プロフィールを変更しました',
         status: 'success',
         duration: 9000,
         position: 'top',
@@ -158,49 +173,53 @@ const UserDetail = ({ user }: UserDetailProps) => {
           <ModalHeader>プロフィール編集</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Input
-              type='file'
-              accept='image/*'
-              style={{ display: 'none' }}
-              ref={inputFileRef}
-              onChange={handleImageChange}
-            />
-            <HStack justifyContent={'space-around'}>
-              <Avatar
-                src={
-                  userImage
-                    ? URL.createObjectURL(userImage)
-                    : authUser?.thumbnail
-                }
-                size='xl'
-              />
+            <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
+              <FormControl id='name'>
+                <FormLabel>Name</FormLabel>
+                <Input {...register('name')} />
+                {errors.name && <span>This field is required</span>}
+              </FormControl>
+
+              <FormControl id='image'>
+                <HStack justifyContent={'space-around'}>
+                  <FormLabel
+                    bg='black'
+                    color='white'
+                    w='fit-content'
+                    p={3}
+                    borderRadius={'full'}
+                  >
+                    画像を選択
+                    <Input type='file' hidden {...register('image')} />
+                  </FormLabel>
+                  {errors.image && <span>This field is required</span>}
+
+                  <Avatar
+                    src={
+                      currentImage?.length > 0
+                        ? URL.createObjectURL(currentImage[0])
+                        : authUser?.thumbnail
+                    }
+                    size='2xl'
+                  />
+                </HStack>
+              </FormControl>
 
               <Button
+                type='submit'
                 colorScheme='white'
                 bg='black'
-                rounded={'full'}
-                onClick={() => inputFileRef.current?.click()}
+                mt={10}
+                isLoading={isSubmitting}
+                isDisabled={Object.entries(errors).length !== 0}
               >
-                画像を変更
+                完了
               </Button>
-            </HStack>
+            </Stack>
           </ModalBody>
-
-          <ModalFooter>
-            <Button
-              colorScheme='white'
-              bg='black'
-              onClick={async () => {
-                await saveImage()
-                onClose()
-                fetchUser()
-              }}
-            >
-              完了
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
+
       <Container maxW='2xl'>
         <Stack spacing={4}>
           <HStack
@@ -238,9 +257,10 @@ const UserDetail = ({ user }: UserDetailProps) => {
             参加イベント
           </Heading>
           <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={4}>
-            {user.events?.map((e) => (
+            {user.events?.map((e, i) => (
               <Link
-                key={e.id}
+                // TODO
+                key={e.id + i}
                 href={`/events/${e.id}`}
                 textDecoration='none !important'
               >
