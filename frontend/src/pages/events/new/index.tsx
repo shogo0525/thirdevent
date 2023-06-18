@@ -1,11 +1,15 @@
 import { GetServerSideProps } from 'next'
-import { useState, useRef, ChangeEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { useForm, SubmitHandler } from 'react-hook-form'
 import { useRouter } from 'next/router'
 import { v4 as uuidv4 } from 'uuid'
 import supabase from '@/lib/supabase'
 import { useContract, useContractWrite } from '@thirdweb-dev/react'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import {
+  FormControl,
+  FormLabel,
   Stack,
   HStack,
   Button,
@@ -14,6 +18,8 @@ import {
   Image,
   useToast,
   Select,
+  Box,
+  Textarea,
 } from '@chakra-ui/react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { COOKIE } from '@/constants'
@@ -44,51 +50,51 @@ export const getServerSideProps: GetServerSideProps<NewEventProps> = async (
 const NewEvent = () => {
   const toast = useToast()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, authSignIn } = useAuth()
 
-  const [eventTitle, setEventTitle] = useState('')
-  const [selectedGroupId, setSelectedGroupId] = useState('')
-  const inputFileRef = useRef<HTMLInputElement>(null)
-  const [eventImage, setEventImage] = useState<File | null>(null)
+  const schema = z.object({
+    groupId: z.string().nonempty({ message: 'Required' }),
+    title: z.string().nonempty({ message: 'Required' }),
+    description: z.string().nonempty({ message: 'Required' }),
+    image: z
+      .custom<FileList>()
+      .refine((file) => file.length !== 0, { message: 'Required' }),
+    // .transform((file) => file[0]),
+  })
 
-  const selectedGroup = user?.groups?.find((g) => g.id === selectedGroupId)
+  type FormData = z.infer<typeof schema>
 
-  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedGroupId(e.target.value)
-  }
+  const {
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  })
 
-  const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setEventTitle(event.target.value)
-  }
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    file && setEventImage(file)
-  }
-
-  const handleUploadClick = () => {
-    inputFileRef.current?.click()
-  }
+  const currentGroupId = watch('groupId')
+  const selectedGroup = user?.groups?.find((g) => g.id === currentGroupId)
+  const currentImage = watch('image')
 
   const { contract: groupContract } = useContract(
     selectedGroup?.contractAddress,
     GroupAbi,
   )
 
-  const { mutateAsync: mutateCreateEvent, isLoading } = useContractWrite(
+  const { mutateAsync: mutateCreateEvent } = useContractWrite(
     groupContract,
     'createEvent',
   )
 
-  const createEvent = async () => {
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
-      if (!user || !eventImage || !selectedGroup) return
       const eventId = uuidv4()
 
       const imageFilePath = `events/${eventId}/thumbnail.png`
       const { error: imageUploadError } = await supabase.storage
         .from('images')
-        .upload(imageFilePath, eventImage)
+        .upload(imageFilePath, data.image[0])
 
       if (imageUploadError) {
         console.error('Error uploading image:', imageUploadError)
@@ -124,9 +130,10 @@ const NewEvent = () => {
 
       const { error } = await supabase.from('events').insert({
         id: eventId,
-        group_id: selectedGroup.id,
+        group_id: data.groupId,
         contract_address: eventAddress,
-        title: eventTitle,
+        title: data.title,
+        description: data.description,
         thumbnail: imagePublicUrl,
       })
 
@@ -140,7 +147,25 @@ const NewEvent = () => {
     }
   }
 
-  if (user?.groups?.length === 0) {
+  console.log(errors)
+
+  if (!user) {
+    return (
+      <Button
+        colorScheme='white'
+        bg='black'
+        rounded={'full'}
+        onClick={async () => {
+          await authSignIn()
+          router.reload()
+        }}
+      >
+        ログイン
+      </Button>
+    )
+  }
+
+  if (!user.groups || user.groups.length === 0) {
     return (
       <HStack mb={20}>
         <Text fontSize={'xl'} fontWeight={'bold'}>
@@ -152,57 +177,74 @@ const NewEvent = () => {
   }
 
   return (
-    <Stack>
-      {user?.groups && user.groups.length > 0 && (
-        <Select
-          value={selectedGroupId}
-          onChange={handleGroupChange}
-          placeholder='グループを選択'
-        >
+    <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
+      <FormControl id='groupId'>
+        <FormLabel>Group</FormLabel>
+        <Select {...register('groupId')} placeholder='グループを選択'>
           {user.groups.map((group) => (
             <option key={group.id} value={group.id}>
               {group.name}
             </option>
           ))}
         </Select>
-      )}
-      <Input
-        placeholder='イベント名'
-        value={eventTitle}
-        onChange={handleTitleChange}
-      />
-      <Input
-        type='file'
-        accept='image/*'
-        style={{ display: 'none' }}
-        ref={inputFileRef}
-        onChange={handleImageChange}
-      />
-      <Button
-        borderRadius='none'
-        p={0}
-        width='100%'
-        height={{ base: '200px', md: '300px' }}
-        bgColor={'gray.200'}
-        onClick={handleUploadClick}
-      >
-        {eventImage ? (
-          <Image
-            src={URL.createObjectURL(eventImage)}
-            alt='選択された画像'
+        {errors.groupId && <span>{errors.groupId.message}</span>}
+      </FormControl>
+
+      <FormControl id='title'>
+        <FormLabel>Title</FormLabel>
+        <Input {...register('title')} />
+        {errors.title && <span>{errors.title.message}</span>}
+      </FormControl>
+
+      <FormControl id='description'>
+        <FormLabel>description</FormLabel>
+        <Textarea {...register('description')} />
+        {errors.description && <span>{errors.description.message}</span>}
+      </FormControl>
+
+      <FormControl id='image'>
+        <HStack justifyContent={'space-between'}>
+          <Stack>
+            <FormLabel
+              bg='black'
+              color='white'
+              p={3}
+              borderRadius={'full'}
+              w={110}
+            >
+              画像を選択
+              <Input type='file' hidden {...register('image')} />
+            </FormLabel>
+            {errors.image && <span>{errors.image.message}</span>}
+          </Stack>
+
+          <Box
             width='100%'
-            height='100%'
-            objectFit='cover'
-          />
-        ) : (
-          '画像を選択'
-        )}
-      </Button>
+            height={{ base: '200px', md: '300px' }}
+            bgColor={'gray.200'}
+          >
+            {currentImage?.length > 0 ? (
+              <Image
+                src={URL.createObjectURL(currentImage[0])}
+                alt='イベント画像'
+                width='100%'
+                height={{ base: '200px', md: '300px' }}
+                objectFit={'cover'}
+              />
+            ) : (
+              ''
+            )}
+          </Box>
+        </HStack>
+      </FormControl>
+
       <Button
-        onClick={createEvent}
-        isLoading={isLoading}
-        colorScheme='purple'
-        isDisabled={!eventTitle || !eventImage || !selectedGroup}
+        type='submit'
+        colorScheme='white'
+        bg='black'
+        mt={10}
+        isLoading={isSubmitting}
+        isDisabled={Object.entries(errors).length !== 0}
       >
         イベントを作成
       </Button>
