@@ -166,7 +166,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     ticket: Ticket
     transactionHash: string
   } | null>(null)
-  const { mutateAsync: mutateMint, isLoading } = useContractWrite(
+  const { mutateAsync: mutateMint, isLoading: isMinting } = useContractWrite(
     eventContract,
     'mint',
   )
@@ -251,7 +251,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     },
   ]
 
-  const { mutateAsync: mutateAddTicketType, error } = useContractWrite(
+  const { mutateAsync: mutateAddTicketType } = useContractWrite(
     groupContract,
     'addTicketType',
   )

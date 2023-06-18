@@ -28,6 +28,7 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
 
   const requireCode = ticket.ruleType && ticket.ruleType === 'code'
   const [code, setCode] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   return (
     <HStack>
@@ -62,14 +63,22 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
               colorScheme='teal'
               size='sm'
               color='white'
-              onClick={() =>
-                onPurchase(
-                  ticket.ticketId,
-                  ethers.utils.parseEther(ticket.fee.toString()),
-                  ticket.requireSignature,
-                  code,
-                )
-              }
+              onClick={async () => {
+                setIsLoading(true)
+                try {
+                  await onPurchase(
+                    ticket.ticketId,
+                    ethers.utils.parseEther(ticket.fee.toString()),
+                    ticket.requireSignature,
+                    code,
+                  )
+                } catch (e) {
+                  console.log('error', e)
+                } finally {
+                  setIsLoading(false)
+                }
+              }}
+              isLoading={isLoading}
               isDisabled={requireCode && !code}
             >
               購入({formattedPrice})

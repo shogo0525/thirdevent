@@ -1,4 +1,3 @@
-import { useEffect, useState, useCallback } from 'react'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
 import { HamburgerIcon } from '@chakra-ui/icons'
@@ -28,11 +27,12 @@ const Header = () => {
 
   const { isOpen, onOpen, onClose } = useDisclosure()
   const {
-    authSignIn,
-    authSignOut,
     user,
+    connectedWallet,
     isNetworkMismatched,
     switchActiveChain,
+    authSignIn,
+    authSignOut,
   } = useAuth()
 
   const handleSignOut = () => {
@@ -145,7 +145,7 @@ const Header = () => {
             </HStack>
           )}
 
-          {isNetworkMismatched && (
+          {user && isNetworkMismatched && (
             <Button
               colorScheme='white'
               bg='black'

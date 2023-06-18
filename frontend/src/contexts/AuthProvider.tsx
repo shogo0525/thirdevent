@@ -37,6 +37,7 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const address = useAddress()
+
   const connectWithMetamask = useMetamask()
   const disconnect = useDisconnect()
   const connectedWallet = useConnectedWallet()
