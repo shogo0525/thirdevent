@@ -1,4 +1,4 @@
-import React, { useState, useRef, ChangeEvent } from 'react'
+import React, { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -18,17 +18,19 @@ import {
 } from '@chakra-ui/react'
 import { v4 as uuidv4 } from 'uuid'
 import supabase from '@/lib/supabase'
-import { Event, TicketRuleType } from '@/types'
+import { Event } from '@/types'
 
 const schema = z.object({
-  name: z.string(),
+  name: z.string().nonempty({ message: 'Required' }),
   fee: z.string(),
   maxParticipants: z.number().int().positive(),
   participantType: z.number().int(),
-  img: z.any(),
   requireSignature: z.boolean(),
   ruleType: z.enum(['allowlist', 'code', 'nft']).optional(),
   ruleValue: z.string().optional(),
+  image: z
+    .custom<FileList>()
+    .refine((file) => file.length !== 0, { message: 'Required' }),
 })
 
 export type FormData = z.infer<typeof schema>
@@ -38,62 +40,51 @@ type TicketFormProps = {
   onSubmitHandler: (
     newTicketId: string,
     data: FormData,
+    metadataURI: string,
     thumbnail: string,
   ) => Promise<void>
 }
 
 export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
-  const [ticketImage, setTicketImage] = useState<File | null>(null)
-
   const {
     register,
+    watch,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-    watch,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
   const requireSignature = watch('requireSignature')
   const ruleType = watch('ruleType')
-  console.log(requireSignature, ruleType, errors)
+  const currentImage = watch('image')
+  const inputImageRef = React.useRef<HTMLInputElement | null>(null)
+  const { ref: imageFieldRef, ...imageRest } = register('image')
 
   const onSubmit = async (data: FormData) => {
-    console.log(data)
-
     try {
-      if (data.img) {
-        const { data: uploadResult } = await uploadImageAndGetJSON(
-          ticketImage,
-          data.name,
-        )
-        if (uploadResult) {
-          const { ticketId, ticketImageUrl, metadataURI } = uploadResult
-          data.img = metadataURI
+      const { data: uploadResult } = await uploadImageAndGetJSON(
+        data.image[0],
+        data.name,
+      )
+      if (uploadResult) {
+        const { ticketId, ticketImageUrl, metadataURI } = uploadResult
 
-          const { error } = await supabase.from('tickets').insert({
-            id: ticketId,
-            event_id: event.id,
-            name: data.name,
-            thumbnail: ticketImageUrl,
-            rule_type: data.ruleType,
-            rule_value: data.ruleValue,
-          })
+        const { error } = await supabase.from('tickets').insert({
+          id: ticketId,
+          event_id: event.id,
+          name: data.name,
+          thumbnail: ticketImageUrl,
+          rule_type: data.ruleType,
+          rule_value: data.ruleValue,
+        })
 
-          await onSubmitHandler(ticketId, data, ticketImageUrl)
-        }
-      } else {
-        alert('Please input image file')
+        await onSubmitHandler(ticketId, data, metadataURI, ticketImageUrl)
       }
     } catch (error) {
       console.log('Error uploading file: ', error)
     }
-  }
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    file && setTicketImage(file)
   }
 
   const uploadImageAndGetJSON = async (
@@ -170,15 +161,10 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
 
   return (
     <Stack as='form' onSubmit={handleSubmit(onSubmit)} p={4} spacing={4}>
-      <FormControl isInvalid={!!errors.name}>
+      <FormControl id='name'>
         <FormLabel>Name</FormLabel>
-        <Controller
-          name='name'
-          control={control}
-          defaultValue=''
-          render={({ field }) => <Input {...field} />}
-        />
-        <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
+        <Input {...register('name')} />
+        <span>{errors.name?.message}</span>
       </FormControl>
 
       <FormControl isInvalid={!!errors.fee}>
@@ -283,32 +269,47 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
         </>
       )}
 
-      <FormControl isInvalid={!!errors.img}>
-        <FormLabel>Image File</FormLabel>
-        <Controller
-          name='img'
-          control={control}
-          defaultValue=''
-          render={({ field: { onChange, ...rest } }) => (
-            <Input
-              type='file'
-              {...rest}
-              onChange={(e) => {
-                handleImageChange(e)
-                onChange(e)
-              }}
-            />
-          )}
-        />
-        {ticketImage && (
-          <Image
-            src={URL.createObjectURL(ticketImage)}
-            alt='選択された画像'
-            width='100%'
-            height='100%'
-            objectFit='cover'
+      <FormControl id='image'>
+        <FormLabel>Image</FormLabel>
+        {errors.image && <span>{errors.image.message}</span>}
+        <Stack>
+          <Input
+            type='file'
+            hidden
+            {...imageRest}
+            ref={(e) => {
+              imageFieldRef(e)
+              inputImageRef.current = e
+            }}
           />
-        )}
+          <Stack>
+            <Button
+              colorScheme='white'
+              bg='black'
+              rounded={'full'}
+              onClick={() => inputImageRef.current?.click()}
+            >
+              画像を選択
+            </Button>
+          </Stack>
+          <Box
+            width='100%'
+            height={{ base: '200px', md: '300px' }}
+            bgColor={'gray.200'}
+          >
+            {currentImage?.length > 0 ? (
+              <Image
+                src={URL.createObjectURL(currentImage[0])}
+                alt='グループ画像'
+                width='100%'
+                height={{ base: '200px', md: '300px' }}
+                objectFit={'cover'}
+              />
+            ) : (
+              ''
+            )}
+          </Box>
+        </Stack>
       </FormControl>
 
       <Button colorScheme='blue' type='submit' isLoading={isSubmitting}>

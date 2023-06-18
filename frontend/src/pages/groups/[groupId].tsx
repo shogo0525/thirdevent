@@ -9,7 +9,6 @@ import {
   useContractRead,
   useContractWrite,
 } from '@thirdweb-dev/react'
-import { ThirdwebSDK } from '@thirdweb-dev/sdk'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import {
   Container,
@@ -38,8 +37,9 @@ import {
 } from '@chakra-ui/react'
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { truncateContractAddress } from '@/utils'
-import { COOKIE } from '@/constants'
 import type { Group, User } from '@/types'
+import { thirdwebSDK } from '@/lib/thirdwebSDK'
+import { SCAN_BASE_LINK } from '@/constants'
 
 interface GroupDetailProps {
   group: Group
@@ -61,7 +61,6 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
     )
     .eq('id', groupId)
     .maybeSingle()
-  // console.log(groupData)
 
   if (!groupData) {
     return {
@@ -69,9 +68,7 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
     }
   }
 
-  // TODO: constants
-  const sdk = new ThirdwebSDK('mumbai')
-  const balance = await sdk.getBalance(groupData.contract_address)
+  const balance = await thirdwebSDK.getBalance(groupData.contract_address)
 
   const group: Group = {
     id: groupData.id,
@@ -93,7 +90,6 @@ export const getServerSideProps: GetServerSideProps<GroupDetailProps> = async (
       thumbnail: e.thumbnail,
     })),
   }
-  console.log(group)
 
   return {
     props: {
@@ -111,8 +107,6 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
     GroupAbi,
   )
 
-  // address が Group の NFT をいくつ所有しているかを取得
-  // TODO: can be refactored
   const { data: groupNftCount } = useContractRead(groupContract, 'balanceOf', [
     address,
   ])
@@ -123,6 +117,7 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
 
   const { mutateAsync: mutateAddMember, isLoading: isAddingMember } =
     useContractWrite(groupContract, 'addMember')
+
   const addMember = async () => {
     if (!newMember) return
     try {
@@ -150,10 +145,11 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
     {
       label: 'コントラクトアドレス',
       content: truncateContractAddress(group.contractAddress),
-      href: `https://mumbai.polygonscan.com/address/${group.contractAddress}`,
+      href: `${SCAN_BASE_LINK}/address/${group.contractAddress}`,
       target: '_blank',
     },
   ]
+
   if (isGroupMember) {
     groupData.push({
       label: '残高',

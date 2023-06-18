@@ -1,6 +1,5 @@
 import { GetServerSideProps } from 'next'
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
+import React, { useState } from 'react'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
@@ -13,12 +12,8 @@ import {
 import GroupAbi from '@/contracts/GroupAbi.json'
 import EventAbi from '@/contracts/EventAbi.json'
 import {
-  Container,
   HStack,
   Stack,
-  Flex,
-  Badge,
-  Box,
   Button,
   Grid,
   GridItem,
@@ -31,6 +26,7 @@ import {
   Card,
   CardBody,
   IconButton,
+  AspectRatio,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -80,8 +76,6 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
   )
   const ticketData = await eventContract.call('getAllTicketTypes')
 
-  // console.log(ticketData)
-
   const event: Event = {
     id: eventData.id,
     contractAddress: eventData.contract_address,
@@ -92,6 +86,7 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
       id: eventData.group.id,
       name: eventData.group.name,
       contractAddress: eventData.group.contract_address,
+      thumbnail: eventData.group.thumbnail,
     },
     tickets: eventData.tickets.map((t: any) => {
       const ticketDataFromContract = ticketData.find(
@@ -100,7 +95,6 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
       return {
         ticketId: t.id,
         name: t.name,
-        // TODO: save to DB
         maxParticipants: Number(ticketDataFromContract?.maxParticipants),
         currentParticipants: Number(
           ticketDataFromContract?.currentParticipants,
@@ -113,9 +107,7 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
       }
     }),
   }
-  console.log(event)
 
-  // TODO
   const { owners: holderAddresses } =
     await alchemyClient.nft.getOwnersForContract(event.contractAddress)
 
@@ -145,6 +137,13 @@ export const getServerSideProps: GetServerSideProps<EventDetailProps> = async (
 const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
   const { user, connectedWallet } = useAuth()
   const toast = useToast()
+  const {
+    isOpen: isTicketFormOpen,
+    onOpen: onTicketFormOpen,
+    onClose: onTicketFormClose,
+  } = useDisclosure()
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const [tickets, setTickets] = useState<Ticket[]>(event.tickets ?? [])
 
   const { contract: groupContract } = useContract(
@@ -229,28 +228,6 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     }
   }
 
-  const eventData = [
-    {
-      label: 'イベント名',
-      content: event.title,
-    },
-    {
-      label: '主催',
-      content: event.group.name,
-      href: `/groups/${event.group.id}`,
-    },
-    {
-      label: 'コントラクトアドレス',
-      content: truncateContractAddress(event.contractAddress),
-      href: `https://mumbai.polygonscan.com/address/${event.contractAddress}`,
-      target: '_blank',
-    },
-    {
-      content: event.description,
-      useMultiLineBody: true,
-    },
-  ]
-
   const { mutateAsync: mutateAddTicketType } = useContractWrite(
     groupContract,
     'addTicketType',
@@ -259,6 +236,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
   const onSubmitHandler = async (
     newTicketId: string,
     data: TicketFormData,
+    metadataURI: string,
     thumbnail: string,
   ) => {
     const ticketType = [
@@ -268,7 +246,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
       ethers.utils.parseEther(data.fee),
       data.maxParticipants,
       data.participantType,
-      data.img,
+      metadataURI,
       data.requireSignature,
     ]
     try {
@@ -295,12 +273,42 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     }
   }
 
-  const {
-    isOpen: isTicketFormOpen,
-    onOpen: onTicketFormOpen,
-    onClose: onTicketFormClose,
-  } = useDisclosure()
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const eventData = [
+    {
+      label: 'イベント名',
+      content: <Text size='md'>{event.title}</Text>,
+    },
+    {
+      label: '主催',
+      content: (
+        <Link as={NextLink} color='teal.500' href={`/groups/${event.group.id}`}>
+          <HStack>
+            <Avatar src={event.group?.thumbnail} size='sm' />
+            <Text fontSize='md'>{event.group.name}</Text>
+          </HStack>
+        </Link>
+      ),
+    },
+    {
+      label: 'コントラクトアドレス',
+      content: (
+        <Link
+          as={NextLink}
+          color='teal.500'
+          href={`${SCAN_BASE_LINK}/address/${event.contractAddress}`}
+          target='_blank'
+        >
+          <HStack alignItems='center' gap={1}>
+            <Text>{truncateContractAddress(event.contractAddress)}</Text>
+            <ExternalLinkIcon color='teal.500' />
+          </HStack>
+        </Link>
+      ),
+    },
+    {
+      content: <MultiLineBody body={event.description ?? ''} />,
+    },
+  ]
 
   return (
     <>
@@ -360,7 +368,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
               <Button
                 variant='ghost'
                 as='a'
-                href={`${SCAN_BASE_LINK}/${mintedData.transactionHash}`}
+                href={`${SCAN_BASE_LINK}/tx/${mintedData.transactionHash}`}
                 target='_blank'
               >
                 polygonscanで確認する
@@ -372,11 +380,23 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
 
       <Grid templateColumns={{ base: '100%', md: '65% 35%' }} gap={4}>
         <GridItem>
-          <Stack>
-            <HStack justifyContent={'space-between'}>
+          <Stack spacing={4}>
+            <Stack bg='white' p={2} borderRadius={'lg'}>
+              <AspectRatio ratio={2 / 1}>
+                <Image
+                  src={event.thumbnail}
+                  alt={event.title}
+                  objectFit='cover'
+                  borderRadius='lg'
+                />
+              </AspectRatio>
               <Heading as='h2' size='lg'>
                 {event.title}
               </Heading>
+              <HStack>
+                <Avatar src={event.group?.thumbnail} size='sm' />
+                <Text fontSize='sm'>Hosted by {event.group.name}</Text>
+              </HStack>
               {isGroupMember && (
                 <Button
                   as={NextLink}
@@ -388,16 +408,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
                   イベント管理
                 </Button>
               )}
-            </HStack>
-
-            <Image
-              src={event.thumbnail}
-              alt={event.title}
-              width='100%'
-              height={{ base: '200px', md: '300px' }}
-              objectFit='cover'
-              borderRadius='lg'
-            />
+            </Stack>
 
             {tickets.length > 0 && (
               <Stack>
@@ -449,46 +460,19 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
             <Card borderRadius='lg'>
               <CardBody p={0}>
                 <Stack mt={2} spacing={3} p={3}>
-                  {eventData.map(
-                    ({ label, content, href, target, useMultiLineBody }, i) => {
-                      return (
-                        <React.Fragment key={i}>
-                          <Stack direction='row' justifyContent='space-between'>
-                            {label && (
-                              <Text size='md' fontWeight='bold'>
-                                {label}
-                              </Text>
-                            )}
-                            {content && (
-                              <>
-                                {useMultiLineBody ? (
-                                  <MultiLineBody body={content} />
-                                ) : href ? (
-                                  <Link
-                                    as={NextLink}
-                                    color='teal.500'
-                                    href={href}
-                                    target={target ?? '_self'}
-                                  >
-                                    <Flex alignItems='center' gap={1}>
-                                      {content}
-                                      {target === '_blank' && (
-                                        <ExternalLinkIcon color='teal.500' />
-                                      )}
-                                    </Flex>
-                                  </Link>
-                                ) : (
-                                  <Text size='md'>{content}</Text>
-                                )}
-                              </>
-                            )}
-                          </Stack>
-
-                          {i !== eventData.length - 1 && <Divider />}
-                        </React.Fragment>
-                      )
-                    },
-                  )}
+                  {eventData.map(({ label, content }, i) => (
+                    <React.Fragment key={i}>
+                      <HStack justifyContent='space-between'>
+                        {label && (
+                          <Text size='md' fontWeight='bold'>
+                            {label}
+                          </Text>
+                        )}
+                        {content}
+                      </HStack>
+                      {i !== eventData.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
                 </Stack>
               </CardBody>
             </Card>

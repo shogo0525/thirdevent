@@ -1,11 +1,10 @@
 import { GetServerSideProps } from 'next'
-import React, { useRef } from 'react'
+import React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import supabase from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthProvider'
-
 import {
   FormControl,
   FormLabel,
@@ -16,7 +15,6 @@ import {
   Heading,
   Link,
   Image,
-  Icon,
   HStack,
   Card,
   CardBody,
@@ -107,6 +105,8 @@ const UserDetail = ({ user }: UserDetailProps) => {
     resolver: zodResolver(schema),
   })
   const currentImage = watch('image')
+  const inputImageRef = React.useRef<HTMLInputElement | null>(null)
+  const { ref: imageFieldRef, ...imageRest } = register('image')
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
@@ -176,22 +176,34 @@ const UserDetail = ({ user }: UserDetailProps) => {
             <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
               <FormControl id='name'>
                 <FormLabel>Name</FormLabel>
-                <Input {...register('name')} />
+                <Input
+                  {...register('name', {
+                    value: user?.name,
+                  })}
+                />
                 {errors.name && <span>This field is required</span>}
               </FormControl>
 
               <FormControl id='image'>
+                <FormLabel>Image</FormLabel>
+                <Input
+                  type='file'
+                  hidden
+                  {...imageRest}
+                  ref={(e) => {
+                    imageFieldRef(e)
+                    inputImageRef.current = e
+                  }}
+                />
                 <HStack justifyContent={'space-around'}>
-                  <FormLabel
+                  <Button
+                    colorScheme='white'
                     bg='black'
-                    color='white'
-                    w='fit-content'
-                    p={3}
-                    borderRadius={'full'}
+                    rounded={'full'}
+                    onClick={() => inputImageRef.current?.click()}
                   >
                     画像を選択
-                    <Input type='file' hidden {...register('image')} />
-                  </FormLabel>
+                  </Button>
                   {errors.image && <span>This field is required</span>}
 
                   <Avatar

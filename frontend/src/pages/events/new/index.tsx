@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next'
+import React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
@@ -76,6 +77,8 @@ const NewEvent = () => {
   const currentGroupId = watch('groupId')
   const selectedGroup = user?.groups?.find((g) => g.id === currentGroupId)
   const currentImage = watch('image')
+  const inputImageRef = React.useRef<HTMLInputElement | null>(null)
+  const { ref: imageFieldRef, ...imageRest } = register('image')
 
   const { contract: groupContract } = useContract(
     selectedGroup?.contractAddress,
@@ -121,7 +124,6 @@ const NewEvent = () => {
       const event = getEventFromReceipt(receipt, 'EventCreated')
 
       if (!event) {
-        // TODO:
         console.log('error')
         return
       }
@@ -203,18 +205,26 @@ const NewEvent = () => {
       </FormControl>
 
       <FormControl id='image'>
+        <FormLabel>Image</FormLabel>
         <HStack justifyContent={'space-between'}>
+          <Input
+            type='file'
+            hidden
+            {...imageRest}
+            ref={(e) => {
+              imageFieldRef(e)
+              inputImageRef.current = e
+            }}
+          />
           <Stack>
-            <FormLabel
+            <Button
+              colorScheme='white'
               bg='black'
-              color='white'
-              p={3}
-              borderRadius={'full'}
-              w={110}
+              rounded={'full'}
+              onClick={() => inputImageRef.current?.click()}
             >
               画像を選択
-              <Input type='file' hidden {...register('image')} />
-            </FormLabel>
+            </Button>
             {errors.image && <span>{errors.image.message}</span>}
           </Stack>
 

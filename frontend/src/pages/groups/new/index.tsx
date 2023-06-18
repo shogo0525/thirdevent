@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next'
+import React from 'react'
 import { MyHead } from '@/components/MyHead'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -75,6 +76,8 @@ const NewGroup = () => {
   })
 
   const currentImage = watch('image')
+  const inputImageRef = React.useRef<HTMLInputElement | null>(null)
+  const { ref: imageFieldRef, ...imageRest } = register('image')
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     if (!user) return
@@ -146,7 +149,6 @@ const NewGroup = () => {
       const event = getEventFromReceipt(receipt, 'GroupCreated')
 
       if (!event) {
-        // TODO:
         console.log('error')
         return
       }
@@ -212,21 +214,28 @@ const NewGroup = () => {
         </FormControl>
 
         <FormControl id='image'>
+          <FormLabel>Image</FormLabel>
           <HStack justifyContent={'space-between'}>
+            <Input
+              type='file'
+              hidden
+              {...imageRest}
+              ref={(e) => {
+                imageFieldRef(e)
+                inputImageRef.current = e
+              }}
+            />
             <Stack>
-              <FormLabel
+              <Button
+                colorScheme='white'
                 bg='black'
-                color='white'
-                p={3}
-                borderRadius={'full'}
-                w={110}
+                rounded={'full'}
+                onClick={() => inputImageRef.current?.click()}
               >
                 画像を選択
-                <Input type='file' hidden {...register('image')} />
-              </FormLabel>
+              </Button>
               {errors.image && <span>{errors.image.message}</span>}
             </Stack>
-
             <Box
               width='100%'
               height={{ base: '200px', md: '300px' }}
@@ -258,49 +267,6 @@ const NewGroup = () => {
           グループを作成
         </Button>
       </Stack>
-
-      {/* <Stack>
-        <Input
-          placeholder='グループ名'
-          value={groupName}
-          onChange={handleNameChange}
-        />
-        <Input
-          type='file'
-          accept='image/*'
-          style={{ display: 'none' }}
-          ref={inputFileRef}
-          onChange={handleImageChange}
-        />
-        <Button
-          borderRadius='none'
-          p={0}
-          width='100%'
-          height={{ base: '200px', md: '300px' }}
-          bgColor={'gray.200'}
-          onClick={handleUploadClick}
-        >
-          {groupImage ? (
-            <Image
-              src={URL.createObjectURL(groupImage)}
-              alt='選択された画像'
-              width='100%'
-              height='100%'
-              objectFit='cover'
-            />
-          ) : (
-            '画像を選択'
-          )}
-        </Button>
-        <Button
-          onClick={createGroup}
-          isLoading={isLoading}
-          colorScheme='purple'
-          isDisabled={!groupName || !groupImage}
-        >
-          グループを作成
-        </Button>
-      </Stack> */}
     </>
   )
 }
