@@ -121,7 +121,6 @@ const NewEvent = () => {
       const event = getEventFromReceipt(receipt, 'EventCreated')
 
       if (!event) {
-        // TODO:
         console.log('error')
         return
       }

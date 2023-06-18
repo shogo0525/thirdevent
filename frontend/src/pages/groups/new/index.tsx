@@ -146,7 +146,6 @@ const NewGroup = () => {
       const event = getEventFromReceipt(receipt, 'GroupCreated')
 
       if (!event) {
-        // TODO:
         console.log('error')
         return
       }

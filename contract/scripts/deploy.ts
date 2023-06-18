@@ -34,7 +34,6 @@ async function main() {
     id: groupId,
     name: groupName,
     contract_address: groupAddress,
-    // TODO
     created_user_id: userId,
     thumbnail:
       'https://ybtsfvbufxodsocxuwwx.supabase.co/storage/v1/object/public/images/groups/sample/people1.jpg',

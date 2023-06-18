@@ -8,7 +8,6 @@ import { useContract, useContractWrite } from '@thirdweb-dev/react'
 import EventAbi from '@/contracts/EventAbi.json'
 import {
   Stack,
-  Box,
   Button,
   Text,
   Link,
@@ -33,9 +32,8 @@ export const getServerSideProps: GetServerSideProps<ClaimTicketProps> = async (
   context,
 ) => {
   const { eventId, claimId } = context.query
-  // TODO: can be fixed?
+  // TODO: can be refactored?
   const userId = context.req.cookies[COOKIE.USER_ID] ?? ''
-  console.log('userId', userId)
 
   const { data: claimData } = await supabase
     .from('claims')
@@ -133,7 +131,6 @@ const useIsClaimExpired = (claimEndDate: string) => {
     }
   }, [claimEndDate, serverTime])
 
-  console.log('isExpired', isExpired)
   return isExpired
 }
 
@@ -147,10 +144,7 @@ const ClaimTicket = ({ event, claim, ownedNfts }: ClaimTicketProps) => {
     event.contractAddress,
     EventAbi,
   )
-  const { mutateAsync: mutateClaim, isLoading } = useContractWrite(
-    eventContract,
-    'claim',
-  )
+  const { mutateAsync: mutateClaim } = useContractWrite(eventContract, 'claim')
 
   const claimTicket = async (tokenId: number) => {
     if (!connectedWallet) return

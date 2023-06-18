@@ -13,4 +13,4 @@ export const ParticipantTypes = {
 } as const
 
 export const OPENSEA_LINK = 'https://testnets.opensea.io/ja/account'
-export const SCAN_BASE_LINK = 'https://mumbai.polygonscan.com/tx'
+export const SCAN_BASE_LINK = 'https://mumbai.polygonscan.com'
