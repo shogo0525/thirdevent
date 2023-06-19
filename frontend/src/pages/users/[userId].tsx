@@ -20,6 +20,7 @@ import {
   CardBody,
   Avatar,
   Input,
+  Flex,
   SimpleGrid,
   Modal,
   ModalOverlay,
@@ -234,16 +235,22 @@ const UserDetail = ({ user }: UserDetailProps) => {
 
       <Container maxW='2xl'>
         <Stack spacing={4}>
-          <HStack
+          <Flex
             justifyContent={'space-between'}
-            p={6}
+            alignItems={'center'}
+            flexDirection={{
+              base: 'column',
+              sm: 'row',
+            }}
+            p={4}
+            gap={4}
             bg='white'
             rounded={'lg'}
           >
-            <HStack spacing={4}>
+            <HStack spacing={3}>
               <Avatar
                 src={isAuthUser ? authUser?.thumbnail : user.thumbnail}
-                size={{ base: 'lg', sm: '2xl' }}
+                size={{ base: 'xl', sm: '2xl' }}
               />
               <Text fontSize={'xl'}>
                 {isAuthUser ? authUser?.name : user.name}
@@ -263,7 +270,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
                 フォロー
               </Button>
             )}
-          </HStack>
+          </Flex>
 
           <Heading as='h2' size='md' mt={2}>
             参加イベント
