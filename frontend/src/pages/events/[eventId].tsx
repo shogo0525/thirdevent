@@ -233,7 +233,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
     'addTicketType',
   )
 
-  const onSubmitHandler = async (
+  const onAddTicketHandler = async (
     newTicketId: string,
     data: TicketFormData,
     metadataURI: string,
@@ -322,7 +322,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
           <ModalHeader>チケット作成</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <TicketForm event={event} onSubmitHandler={onSubmitHandler} />
+            <TicketForm event={event} onSubmitHandler={onAddTicketHandler} />
           </ModalBody>
         </ModalContent>
       </Modal>

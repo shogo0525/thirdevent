@@ -176,10 +176,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
           render={({ field }) => (
             <NumberInput
               {...field}
-              onChange={(valueString) => {
-                console.log(valueString)
-                field.onChange(valueString)
-              }}
+              onChange={(valueString) => field.onChange(valueString)}
             >
               <NumberInputField {...field} />
             </NumberInput>
@@ -313,7 +310,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
       </FormControl>
 
       <Button colorScheme='blue' type='submit' isLoading={isSubmitting}>
-        Submit
+        チケットを作成
       </Button>
     </Stack>
   )

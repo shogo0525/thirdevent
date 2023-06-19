@@ -225,37 +225,52 @@ const ClaimTicket = ({ event, claim, ownedNfts }: ClaimTicketProps) => {
         </Button>
       )}
 
+      {user && ownedNfts.length === 0 && (
+        <Text>チケットを保有していません</Text>
+      )}
+
       {user &&
         ownedNfts.map((nft) => (
-          <Stack key={nft.tokenId}>
-            <HStack alignItems={'start'}>
-              <Image
-                src={nft.metadata.image}
-                alt={nft.metadata.name}
-                w={300}
-                objectFit={'cover'}
-              />
-              <Stack>
-                <Text fontSize={'lg'}>{nft.metadata.name}</Text>
-                <Text fontSize='sm'>
-                  {`期限: ${new Date(claim.claimEndDate).toLocaleDateString()}`}
-                </Text>
-                <Tooltip
-                  label={isClaimExpired ? 'Claim period has ended.' : ''}
-                  aria-label='A tooltip explaining why the button is disabled'
+          <Stack
+            key={nft.tokenId}
+            flexDirection={{
+              base: 'column',
+              sm: 'row',
+            }}
+            alignItems={{
+              base: 'center',
+              sm: 'start',
+            }}
+            spacing={4}
+          >
+            <Image
+              src={nft.metadata.image}
+              alt={nft.metadata.name}
+              // maxW={300}
+              boxSize={200}
+              objectFit={'cover'}
+              borderRadius='lg'
+            />
+            <Stack>
+              <Text fontSize={'lg'}>{nft.metadata.name}</Text>
+              <Text fontSize='sm'>
+                {`期限: ${new Date(claim.claimEndDate).toLocaleDateString()}`}
+              </Text>
+              <Tooltip
+                label={isClaimExpired ? 'Claim period has ended.' : ''}
+                aria-label='A tooltip explaining why the button is disabled'
+              >
+                <Button
+                  onClick={() => claimTicket(nft.tokenId)}
+                  isDisabled={isClaimExpired}
+                  w='fit-content'
+                  p={6}
                 >
-                  <Button
-                    onClick={() => claimTicket(nft.tokenId)}
-                    isDisabled={isClaimExpired}
-                    w='fit-content'
-                    p={6}
-                  >
-                    参加確定をする
-                    <br /> (Token ID: {nft.tokenId})
-                  </Button>
-                </Tooltip>
-              </Stack>
-            </HStack>
+                  参加確定をする
+                  <br /> (Token ID: {nft.tokenId})
+                </Button>
+              </Tooltip>
+            </Stack>
           </Stack>
         ))}
     </Stack>

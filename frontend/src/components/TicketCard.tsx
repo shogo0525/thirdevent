@@ -37,6 +37,7 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
         src={ticket.thumbnail}
         boxSize={40}
         maxH={20}
+        minW={20}
         objectFit={'cover'}
       />
       <Box
@@ -46,6 +47,7 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
         boxShadow='xl'
         p={2}
         w='full'
+        minW={250}
       >
         <Flex justifyContent='space-between' alignItems='center'>
           <Text fontSize='md' fontWeight='bold'>
@@ -85,7 +87,19 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
             </Button>
           </Flex>
         </Flex>
-        <Flex justifyContent='space-between' alignItems='center' mt={2}>
+        <Flex
+          mt={2}
+          gap={2}
+          justifyContent='space-between'
+          alignItems={{
+            base: 'start',
+            sm: 'center',
+          }}
+          flexDirection={{
+            base: 'column',
+            sm: 'row',
+          }}
+        >
           <Text fontSize='sm'>
             {`${ticket.currentParticipants} / ${ticket.maxParticipants}`}枚
           </Text>

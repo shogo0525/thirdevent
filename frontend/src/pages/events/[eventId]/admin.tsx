@@ -4,7 +4,11 @@ import { useForm, Controller } from 'react-hook-form'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useContract, useContractWrite } from '@thirdweb-dev/react'
+import {
+  useContract,
+  useContractRead,
+  useContractWrite,
+} from '@thirdweb-dev/react'
 import * as z from 'zod'
 import {
   Box,
@@ -31,6 +35,7 @@ import QRCode from 'qrcode'
 import EventAbi from '@/contracts/EventAbi.json'
 import GroupAbi from '@/contracts/GroupAbi.json'
 import type { Event } from '@/types'
+import { useAuth } from '@/contexts/AuthProvider'
 
 type ClaimUrl = {
   url: string
@@ -109,15 +114,25 @@ const AdminEvent = ({
   splitContractAddress,
   claimUrlList: initialClaimUrlList,
 }: AdminEventProps) => {
+  const { authSignIn, user } = useAuth()
   const toast = useToast()
+  const router = useRouter()
 
   const [currentSplitAddress, setCurrentSplitAddress] =
     React.useState(splitContractAddress)
   const [splitAddress, setSplitAddress] = React.useState('')
+
   const { contract: groupContract } = useContract(
     event.group.contractAddress,
     GroupAbi,
   )
+
+  const { data: groupNftCount } = useContractRead(groupContract, 'balanceOf', [
+    user?.walletAddress,
+  ])
+
+  const isGroupMember = Number(groupNftCount) > 0 && user
+
   const { mutateAsync: mutateSetSplitAddress, isLoading } = useContractWrite(
     groupContract,
     'setSplitContractAddress',
@@ -179,6 +194,26 @@ const AdminEvent = ({
     } catch (error) {
       console.log('Error setting claim end date: ', error)
     }
+  }
+
+  if (!user) {
+    return (
+      <Button
+        colorScheme='white'
+        bg='black'
+        rounded={'full'}
+        onClick={async () => {
+          await authSignIn()
+          router.reload()
+        }}
+      >
+        ログイン
+      </Button>
+    )
+  }
+
+  if (!isGroupMember) {
+    return <Text>グループメンバーではありません</Text>
   }
 
   return (
