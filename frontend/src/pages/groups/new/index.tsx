@@ -49,7 +49,7 @@ export const getServerSideProps: GetServerSideProps<NewGroupProps> = async (
 const NewGroup = () => {
   const toast = useToast()
   const router = useRouter()
-  const { user, authSignIn } = useAuth()
+  const { user, authSignIn, fetchUser } = useAuth()
 
   const { contract } = useContract(
     CONTRACT_ADDRESSES.GroupFactory,
@@ -177,6 +177,7 @@ const NewGroup = () => {
       }
 
       router.push(`/groups/${groupId}`)
+      fetchUser()
     } catch (e) {
       console.log('e', e)
     }
