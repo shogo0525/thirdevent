@@ -1,25 +1,7 @@
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import Head from 'next/head'
-import supabase from '@/lib/supabase'
-import { Event } from '@/types'
-import {
-  Container,
-  Stack,
-  Box,
-  Button,
-  Text,
-  Input,
-  Link,
-  Heading,
-  Flex,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Image,
-  HStack,
-} from '@chakra-ui/react'
+import { MyHead } from '@/components/MyHead'
+import { Container, Stack, Button, Text, Image, HStack } from '@chakra-ui/react'
 import { COOKIE } from '@/constants'
 import { isTokenExpired } from '@/utils'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -57,35 +39,38 @@ const Login = (_: LoginProps) => {
     router.push('/')
   }
   return (
-    <Container maxW='xl'>
-      <Stack spacing={10}>
-        <Text fontSize={'xl'} fontWeight={'bold'}>
-          thirdeventでイベントを開催・参加する
-        </Text>
-        <Stack
-          maxW={'md'}
-          justifyContent={'space-between'}
-          p={6}
-          bg='white'
-          rounded={'lg'}
-        >
-          <HStack>
-            <Image src='/images/metamask.svg' boxSize='60px' alt='metamask' />
-            <Text fontSize={'xl'} fontWeight={'bold'}>
-              ウォレットで
-            </Text>
-          </HStack>
-          <Button
-            colorScheme='white'
-            bg='black'
-            rounded={'full'}
-            onClick={handleSignIn}
+    <>
+      <MyHead title='ログイン' />
+      <Container maxW='xl'>
+        <Stack spacing={10}>
+          <Text fontSize={'xl'} fontWeight={'bold'}>
+            thirdeventでイベントを開催・参加する
+          </Text>
+          <Stack
+            maxW={'md'}
+            justifyContent={'space-between'}
+            p={6}
+            bg='white'
+            rounded={'lg'}
           >
-            ログインする
-          </Button>
+            <HStack>
+              <Image src='/images/metamask.svg' boxSize='60px' alt='metamask' />
+              <Text fontSize={'xl'} fontWeight={'bold'}>
+                ウォレットで
+              </Text>
+            </HStack>
+            <Button
+              colorScheme='white'
+              bg='black'
+              rounded={'full'}
+              onClick={handleSignIn}
+            >
+              ログインする
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
-    </Container>
+      </Container>
+    </>
   )
 }
 

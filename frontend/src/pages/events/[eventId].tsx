@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next'
 import React, { useState } from 'react'
+import { MyHead } from '@/components/MyHead'
 import NextLink from 'next/link'
 import supabase from '@/lib/supabase'
 import { fetchWithSignature } from '@/lib/fetchWithSignature'
@@ -312,6 +313,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
 
   return (
     <>
+      <MyHead title={event.title} />
       <Modal
         closeOnOverlayClick={false}
         isOpen={isTicketFormOpen}
@@ -457,7 +459,7 @@ const EventDetail = ({ event, ticketOwners }: EventDetailProps) => {
         </GridItem>
         <GridItem justifyItems='center'>
           <Stack spacing={4}>
-            <Card borderRadius='lg'>
+            <Card borderRadius='lg' wordBreak={'break-all'}>
               <CardBody p={0}>
                 <Stack mt={2} spacing={3} p={3}>
                   {eventData.map(({ label, content }, i) => (

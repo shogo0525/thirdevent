@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next'
 import React from 'react'
+import { MyHead } from '@/components/MyHead'
 import { useForm, Controller } from 'react-hook-form'
 import NextLink from 'next/link'
 import { useRouter } from 'next/router'
@@ -217,106 +218,111 @@ const AdminEvent = ({
   }
 
   return (
-    <Stack>
-      <Button
-        as={NextLink}
-        href={`/events/${event.id}`}
-        colorScheme='white'
-        bg='black'
-        rounded={'full'}
-        w='fit-content'
-      >
-        イベントページへ戻る
-      </Button>
-      <Heading as='h2' size='lg' mt={6}>
-        売上の分配設定
-      </Heading>
+    <>
+      <MyHead title={`${event.title} 管理ページ`} />
       <Stack>
-        <Text fontWeight={'bold'}>
-          現在設定中のSplitコントラクト: {currentSplitAddress}
-        </Text>
-        <HStack>
-          <Text fontSize='lg'>
-            STEP1: thirdwebでSplitコントラクトを作成する
+        <Button
+          as={NextLink}
+          href={`/events/${event.id}`}
+          colorScheme='white'
+          bg='black'
+          rounded={'full'}
+          w='fit-content'
+        >
+          イベントページへ戻る
+        </Button>
+        <Heading as='h2' size='lg' mt={6}>
+          売上の分配設定
+        </Heading>
+        <Stack>
+          <Text fontWeight={'bold'}>
+            現在設定中のSplitコントラクト: {currentSplitAddress}
           </Text>
-          <Link
-            as={NextLink}
-            color='teal.500'
-            href={'https://thirdweb.com/thirdweb.eth/Split'}
-            target={'_blank'}
-          >
-            <Flex alignItems='center' gap={1}>
-              thirdweb
-              <ExternalLinkIcon color='teal.500' />
-            </Flex>
-          </Link>
-        </HStack>
-        <Text fontSize='lg'>
-          STEP2: 作成したSplitコントラクトのアドレスを入力し、設定ボタンを押す
-        </Text>
+          <HStack>
+            <Text fontSize='lg'>
+              STEP1: thirdwebでSplitコントラクトを作成する
+            </Text>
+            <Link
+              as={NextLink}
+              color='teal.500'
+              href={'https://thirdweb.com/thirdweb.eth/Split'}
+              target={'_blank'}
+            >
+              <Flex alignItems='center' gap={1}>
+                thirdweb
+                <ExternalLinkIcon color='teal.500' />
+              </Flex>
+            </Link>
+          </HStack>
+          <Text fontSize='lg'>
+            STEP2: 作成したSplitコントラクトのアドレスを入力し、設定ボタンを押す
+          </Text>
 
-        <Input
-          placeholder='Splitコントラクトアドレス'
-          // value={newMember?.walletAddress}
-          onChange={(e) => setSplitAddress(e.target.value)}
-        />
-        <Button
-          colorScheme='teal'
-          size='sm'
-          color='white'
-          onClick={updateSplitAddress}
-          isDisabled={!splitAddress}
-          w='fit-content'
-        >
-          設定
-        </Button>
-      </Stack>
-
-      <Heading as='h2' size='lg' mt={6}>
-        QRコードの発行
-      </Heading>
-      <Stack as='form' onSubmit={handleSubmit(onSubmit)} p={4} spacing={4}>
-        <FormControl isInvalid={!!errors.claim_end_date}>
-          <FormLabel>QRの有効期限</FormLabel>
-          <Controller
-            name='claim_end_date'
-            control={control}
-            defaultValue=''
-            render={({ field }) => <Input type='date' {...field} />}
+          <Input
+            placeholder='Splitコントラクトアドレス'
+            // value={newMember?.walletAddress}
+            onChange={(e) => setSplitAddress(e.target.value)}
           />
-          <FormErrorMessage>{errors.claim_end_date?.message}</FormErrorMessage>
-        </FormControl>
+          <Button
+            colorScheme='teal'
+            size='sm'
+            color='white'
+            onClick={updateSplitAddress}
+            isDisabled={!splitAddress}
+            w='fit-content'
+          >
+            設定
+          </Button>
+        </Stack>
 
-        <Button
-          colorScheme='teal'
-          type='submit'
-          isLoading={isSubmitting}
-          w='fit-content'
-        >
-          発行
-        </Button>
+        <Heading as='h2' size='lg' mt={6}>
+          QRコードの発行
+        </Heading>
+        <Stack as='form' onSubmit={handleSubmit(onSubmit)} p={4} spacing={4}>
+          <FormControl isInvalid={!!errors.claim_end_date}>
+            <FormLabel>QRの有効期限</FormLabel>
+            <Controller
+              name='claim_end_date'
+              control={control}
+              defaultValue=''
+              render={({ field }) => <Input type='date' {...field} />}
+            />
+            <FormErrorMessage>
+              {errors.claim_end_date?.message}
+            </FormErrorMessage>
+          </FormControl>
 
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-          {claimUrlList.map((claimUrl, index) => (
-            <Stack key={index}>
-              <Image src={claimUrl.qrCode} alt='qr' width='100%' />
-              <HStack>
-                <Text>期限: {claimUrl.endDate}</Text>
-                <Link
-                  as={NextLink}
-                  color='teal.500'
-                  href={claimUrl.url}
-                  target='_blank'
-                  textDecoration='none !important'
-                >
-                  リンク
-                </Link>
-              </HStack>
-            </Stack>
-          ))}
-        </SimpleGrid>
+          <Button
+            colorScheme='teal'
+            type='submit'
+            isLoading={isSubmitting}
+            w='fit-content'
+          >
+            発行
+          </Button>
+
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+            {claimUrlList.map((claimUrl, index) => (
+              <Stack key={index}>
+                <Image src={claimUrl.qrCode} alt='qr' width='100%' />
+                <HStack>
+                  <Text>期限: {claimUrl.endDate}</Text>
+                  <Link
+                    as={NextLink}
+                    color='teal.500'
+                    href={claimUrl.url}
+                    target='_blank'
+                    textDecoration='none !important'
+                  >
+                    リンク
+                  </Link>
+                </HStack>
+              </Stack>
+            ))}
+          </SimpleGrid>
+        </Stack>
       </Stack>
-    </Stack>
+    </>
   )
 }
 

@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next'
 import React from 'react'
+import { MyHead } from '@/components/MyHead'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
@@ -149,8 +150,6 @@ const NewEvent = () => {
     }
   }
 
-  console.log(errors)
-
   if (!user) {
     return (
       <Button
@@ -179,86 +178,89 @@ const NewEvent = () => {
   }
 
   return (
-    <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
-      <FormControl id='groupId'>
-        <FormLabel>Group</FormLabel>
-        <Select {...register('groupId')} placeholder='グループを選択'>
-          {user.groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.name}
-            </option>
-          ))}
-        </Select>
-        {errors.groupId && <span>{errors.groupId.message}</span>}
-      </FormControl>
+    <>
+      <MyHead title='イベント作成' />
+      <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
+        <FormControl id='groupId'>
+          <FormLabel>Group</FormLabel>
+          <Select {...register('groupId')} placeholder='グループを選択'>
+            {user.groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </Select>
+          {errors.groupId && <span>{errors.groupId.message}</span>}
+        </FormControl>
 
-      <FormControl id='title'>
-        <FormLabel>Title</FormLabel>
-        <Input {...register('title')} />
-        {errors.title && <span>{errors.title.message}</span>}
-      </FormControl>
+        <FormControl id='title'>
+          <FormLabel>Title</FormLabel>
+          <Input {...register('title')} />
+          {errors.title && <span>{errors.title.message}</span>}
+        </FormControl>
 
-      <FormControl id='description'>
-        <FormLabel>description</FormLabel>
-        <Textarea {...register('description')} />
-        {errors.description && <span>{errors.description.message}</span>}
-      </FormControl>
+        <FormControl id='description'>
+          <FormLabel>Description</FormLabel>
+          <Textarea {...register('description')} />
+          {errors.description && <span>{errors.description.message}</span>}
+        </FormControl>
 
-      <FormControl id='image'>
-        <FormLabel>Image</FormLabel>
-        <HStack justifyContent={'space-between'}>
-          <Input
-            type='file'
-            hidden
-            {...imageRest}
-            ref={(e) => {
-              imageFieldRef(e)
-              inputImageRef.current = e
-            }}
-          />
-          <Stack>
-            <Button
-              colorScheme='white'
-              bg='black'
-              rounded={'full'}
-              onClick={() => inputImageRef.current?.click()}
+        <FormControl id='image'>
+          <FormLabel>Image</FormLabel>
+          <HStack justifyContent={'space-between'}>
+            <Input
+              type='file'
+              hidden
+              {...imageRest}
+              ref={(e) => {
+                imageFieldRef(e)
+                inputImageRef.current = e
+              }}
+            />
+            <Stack>
+              <Button
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+                onClick={() => inputImageRef.current?.click()}
+              >
+                画像を選択
+              </Button>
+              {errors.image && <span>{errors.image.message}</span>}
+            </Stack>
+
+            <Box
+              width='100%'
+              height={{ base: '200px', md: '300px' }}
+              bgColor={'gray.200'}
             >
-              画像を選択
-            </Button>
-            {errors.image && <span>{errors.image.message}</span>}
-          </Stack>
+              {currentImage?.length > 0 ? (
+                <Image
+                  src={URL.createObjectURL(currentImage[0])}
+                  alt='イベント画像'
+                  width='100%'
+                  height={{ base: '200px', md: '300px' }}
+                  objectFit={'cover'}
+                />
+              ) : (
+                ''
+              )}
+            </Box>
+          </HStack>
+        </FormControl>
 
-          <Box
-            width='100%'
-            height={{ base: '200px', md: '300px' }}
-            bgColor={'gray.200'}
-          >
-            {currentImage?.length > 0 ? (
-              <Image
-                src={URL.createObjectURL(currentImage[0])}
-                alt='イベント画像'
-                width='100%'
-                height={{ base: '200px', md: '300px' }}
-                objectFit={'cover'}
-              />
-            ) : (
-              ''
-            )}
-          </Box>
-        </HStack>
-      </FormControl>
-
-      <Button
-        type='submit'
-        colorScheme='white'
-        bg='black'
-        mt={10}
-        isLoading={isSubmitting}
-        isDisabled={Object.entries(errors).length !== 0}
-      >
-        イベントを作成
-      </Button>
-    </Stack>
+        <Button
+          type='submit'
+          colorScheme='white'
+          bg='black'
+          mt={10}
+          isLoading={isSubmitting}
+          isDisabled={Object.entries(errors).length !== 0}
+        >
+          イベントを作成
+        </Button>
+      </Stack>
+    </>
   )
 }
 

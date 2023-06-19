@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next'
 import React from 'react'
+import { MyHead } from '@/components/MyHead'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
@@ -168,6 +169,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
 
   return (
     <>
+      <MyHead title={user.name} />
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>

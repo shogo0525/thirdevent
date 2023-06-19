@@ -156,12 +156,25 @@ const Header = () => {
             </Button>
           )}
 
-          {!user && !router.pathname.startsWith('/claim-ticket') && (
+          {!user &&
+            !router.pathname.startsWith('/claim-ticket') &&
+            router.pathname !== '/' && (
+              <Button
+                colorScheme='white'
+                bg='black'
+                rounded={'full'}
+                onClick={authSignIn}
+              >
+                ログイン
+              </Button>
+            )}
+          {!user && router.pathname === '/' && (
             <Button
+              as={NextLink}
               colorScheme='white'
               bg='black'
               rounded={'full'}
-              onClick={authSignIn}
+              href='/login'
             >
               ログイン
             </Button>
