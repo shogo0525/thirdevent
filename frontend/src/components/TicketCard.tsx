@@ -9,6 +9,7 @@ import {
   Badge,
   Input,
   Image,
+  Stack,
 } from '@chakra-ui/react'
 import type { Ticket } from '@/types'
 import { ParticipantTypes } from '@/constants'
@@ -54,13 +55,7 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
             {ticket.name}
           </Text>
 
-          <Flex justifyContent='space-between' alignItems='center' gap={2}>
-            {requireCode && (
-              <Input
-                placeholder='クーポンコード'
-                onChange={(e) => setCode(e.target.value)}
-              />
-            )}
+          <Stack justifyContent='space-between' alignItems='center' gap={2}>
             <Button
               colorScheme='teal'
               size='sm'
@@ -85,7 +80,16 @@ export const TicketCard = ({ ticket, onPurchase }: TicketCardProps) => {
             >
               購入({formattedPrice})
             </Button>
-          </Flex>
+            {requireCode && (
+              <Input
+                placeholder='クーポンコード'
+                onChange={(e) => setCode(e.target.value)}
+                h={5}
+                maxW={150}
+                minW={120}
+              />
+            )}
+          </Stack>
         </Flex>
         <Flex
           mt={2}
