@@ -194,10 +194,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
           render={({ field }) => (
             <NumberInput
               {...field}
-              onChange={(valueString) => {
-                console.log(valueString)
-                field.onChange(Number(valueString))
-              }}
+              onChange={(valueString) => field.onChange(Number(valueString))}
             >
               <NumberInputField {...field} />
             </NumberInput>
@@ -215,10 +212,7 @@ export const TicketForm = ({ event, onSubmitHandler }: TicketFormProps) => {
           render={({ field }) => (
             <Select
               {...field}
-              onChange={(e) => {
-                console.log(Number(e.target.value))
-                field.onChange(Number(e.target.value))
-              }}
+              onChange={(e) => field.onChange(Number(e.target.value))}
             >
               <option value={0}>Listener</option>
               <option value={1}>Speaker</option>

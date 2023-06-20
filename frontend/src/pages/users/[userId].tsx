@@ -179,11 +179,7 @@ const UserDetail = ({ user }: UserDetailProps) => {
             <Stack as='form' onSubmit={handleSubmit(onSubmit)} spacing={4}>
               <FormControl id='name'>
                 <FormLabel>Name</FormLabel>
-                <Input
-                  {...register('name', {
-                    value: user?.name,
-                  })}
-                />
+                <Input defaultValue={authUser?.name} {...register('name')} />
                 {errors.name && <span>This field is required</span>}
               </FormControl>
 

@@ -77,6 +77,10 @@ contract Group is ERC721, Ownable {
     emit MemberAdded(_account);
   }
 
+  function withdraw(address payable recipient) public onlyAdminOrMember {
+    recipient.sendValue(address(this).balance);
+  }
+
   // ----- Event method -----
 
   function addTicketType(

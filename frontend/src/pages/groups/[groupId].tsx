@@ -35,12 +35,21 @@ import {
   PopoverCloseButton,
   PopoverContent,
   PopoverBody,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react'
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { truncateContractAddress } from '@/utils'
 import type { Group, User } from '@/types'
 import { thirdwebSDK } from '@/lib/thirdwebSDK'
 import { SCAN_BASE_LINK } from '@/constants'
+import { WithdrawForm } from '@/components/WithdrawForm'
 
 interface GroupDetailProps {
   group: Group
@@ -138,23 +147,55 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
     }
   }
 
+  const { isOpen, onOpen, onClose } = useDisclosure()
+
+  const { mutateAsync: mutateWithdraw, isLoading: isWithdrawing } =
+    useContractWrite(groupContract, 'withdraw')
+
+  const withdraw = async (address: string) => {
+    if (!isGroupMember) return
+    try {
+      const { receipt } = await mutateWithdraw({
+        args: [address],
+      })
+      console.log('receipt', receipt)
+    } catch (e) {
+      console.log('e', e)
+    }
+  }
+
   const groupData = [
     {
       label: 'グループ名',
-      content: group.name,
+      content: <Text size='md'>{group.name}</Text>,
     },
     {
       label: 'コントラクトアドレス',
-      content: truncateContractAddress(group.contractAddress),
-      href: `${SCAN_BASE_LINK}/address/${group.contractAddress}`,
-      target: '_blank',
+      content: (
+        <Link
+          as={NextLink}
+          color='teal.500'
+          href={`${SCAN_BASE_LINK}/address/${group.contractAddress}`}
+          target='_blank'
+        >
+          <HStack alignItems='center' gap={1}>
+            <Text>{truncateContractAddress(group.contractAddress)}</Text>
+            <ExternalLinkIcon color='teal.500' />
+          </HStack>
+        </Link>
+      ),
     },
   ]
 
   if (isGroupMember) {
     groupData.push({
       label: '残高',
-      content: `${group.balance} Matic`,
+      content: (
+        <HStack>
+          <Text>{group.balance} Matic</Text>
+          <Button onClick={onOpen}>引き出す</Button>
+        </HStack>
+      ),
     })
   }
 
@@ -178,6 +219,18 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
   return (
     <>
       <MyHead title={group.name} />
+
+      <Modal closeOnOverlayClick={false} isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>グループの残高を引き出す</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <WithdrawForm onSubmitHandler={withdraw} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
       <Grid templateColumns={{ base: '100%', md: '65% 35%' }} gap={4}>
         <GridItem>
           <Stack spacing={4}>
@@ -238,38 +291,17 @@ const GroupDetail = ({ group }: GroupDetailProps) => {
             <Card borderRadius='lg'>
               <CardBody p={0}>
                 <Stack mt={2} spacing={3} p={3}>
-                  {groupData.map(({ label, content, href, target }, i) => {
+                  {groupData.map(({ label, content }, i) => {
                     return (
                       <React.Fragment key={i}>
-                        <Stack direction='row' justifyContent='space-between'>
+                        <HStack justifyContent='space-between'>
                           {label && (
                             <Text size='md' fontWeight='bold'>
                               {label}
                             </Text>
                           )}
-                          {content && (
-                            <>
-                              {href ? (
-                                <Link
-                                  as={NextLink}
-                                  color='teal.500'
-                                  href={href}
-                                  target={target ?? '_self'}
-                                >
-                                  <Flex alignItems='center' gap={1}>
-                                    {content}
-                                    {target === '_blank' && (
-                                      <ExternalLinkIcon color='teal.500' />
-                                    )}
-                                  </Flex>
-                                </Link>
-                              ) : (
-                                <Text size='md'>{content}</Text>
-                              )}
-                            </>
-                          )}
-                        </Stack>
-
+                          {content}
+                        </HStack>
                         {i !== groupData.length - 1 && <Divider />}
                       </React.Fragment>
                     )
