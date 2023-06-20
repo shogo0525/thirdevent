@@ -10,6 +10,9 @@ NFT を活用した、イベント・勉強会運営プラットフォーム
   - MATIC(テストネット）の取得
     - <https://faucet.polygon.technology/>
     - <https://mumbaifaucet.com/>
+  - サンプル画像
+    - <https://fejolmilwpjvcsdeijti.supabase.co/storage/v1/object/public/sample_images/sample_images.zip>
+    - 上記の URL から、グループ作成、イベント作成等で必要なサンプル画像をダウンロードが可能
 
 ### 動作確認
 
